@@ -333,3 +333,11 @@ def : InstAlias<"nop", (SLLI X0_32, X0_32, 0)>, Requires<[IsRV32]>;
 include "RISCVInstrInfoRV64.td"
 include "RISCVInstrInfoM.td"
 include "RISCVInstrInfoA.td"
+
+//===----------------------------------------------------------------------===//
+// Shakti-T intrinsics
+//===----------------------------------------------------------------------===//
+
+//def riscv_validate : MyInst<(outs ), (ins GR64:$src1, GR64:$src2), "val $src1, $src2", [(, (int_riscv_validate GR64:$src1, GR64:$src2))] >;
+// class MyInst<dag outs, dag ins, string asmstr, list<dag> pattern>
+def riscv_validate : MyInst<(outs), (ins GPR:$rs1, GPR:$rs2 ), "val\t$rs1, $rs2", [(set (int_riscv_validate GPR:$rs1, GPR:$rs2))]>;

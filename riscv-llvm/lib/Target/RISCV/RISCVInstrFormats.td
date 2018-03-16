@@ -374,3 +374,15 @@ class CJ<bits<3> funct3, bits<2> opcode, dag outs, dag ins,
   let Inst{2} = offset{5};
   let Inst{1-0} = opcode;
 }
+
+//===----------------------------------------------------------------------===//
+// Shakti-T intrinsics
+//===----------------------------------------------------------------------===//
+
+//class RISCV32Inst<dag outs, dag ins, string asmstr, list<dag> pattern, Format format>
+
+class MyInst<dag outs, dag ins, string asmstr, list<dag> pattern>
+  : RISCV32Inst<outs, ins, asmstr, pattern, FrmPseudo> {
+  let Pattern = pattern;
+  let CodeSize = 3;
+}

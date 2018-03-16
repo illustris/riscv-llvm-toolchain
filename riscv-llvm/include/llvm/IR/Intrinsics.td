@@ -953,3 +953,15 @@ include "llvm/IR/IntrinsicsAMDGPU.td"
 include "llvm/IR/IntrinsicsBPF.td"
 include "llvm/IR/IntrinsicsSystemZ.td"
 include "llvm/IR/IntrinsicsWebAssembly.td"
+
+//===----------------------------------------------------------------------===//
+// Shakti-T intrinsics
+//===----------------------------------------------------------------------===//
+
+let TargetPrefix = "RISCV" in {
+def int_riscv_validate : GCCBuiltin<"__builtin_riscv_validate">,
+          Intrinsic<[],  // return type
+                          [llvm_i32_ty,llvm_i32_ty],  // two 32 bit integer as parameter
+                          [],             // properties nothing 
+                          "llvm.RISCV.validate">; // name or description
+}
