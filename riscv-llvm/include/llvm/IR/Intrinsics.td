@@ -961,7 +961,7 @@ include "llvm/IR/IntrinsicsWebAssembly.td"
 let TargetPrefix = "RISCV" in {
 def int_riscv_validate : GCCBuiltin<"__builtin_riscv_validate">,
           Intrinsic<[],  // return type
-                          [llvm_i32_ty,llvm_i32_ty],  // two 32 bit integer as parameter
+                          [llvm_i64_ty,llvm_i64_ty],  // two 32 bit integer as parameter
                           [],             // properties nothing 
                           "llvm.RISCV.validate">; // name or description
 }

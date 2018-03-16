@@ -384,5 +384,5 @@ class CJ<bits<3> funct3, bits<2> opcode, dag outs, dag ins,
 class MyInst<dag outs, dag ins, string asmstr, list<dag> pattern>
   : RISCV32Inst<outs, ins, asmstr, pattern, FrmPseudo> {
   let Pattern = pattern;
-  let CodeSize = 3;
+  //let CodeSize = 3;
 }

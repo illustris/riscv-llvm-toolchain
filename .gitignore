@@ -4,3 +4,7 @@ build-llvm
 config.status
 riscv-llvm-toolchain
 stamps
+riscv-gnu-toolchain/build-binutils-newlib
+riscv-gnu-toolchain/build-gcc-newlib-stage1
+riscv-gnu-toolchain/build-gcc-newlib-stage2
+riscv-gnu-toolchain/build-newlib
