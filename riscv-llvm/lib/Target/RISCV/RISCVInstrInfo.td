@@ -340,3 +340,4 @@ include "RISCVInstrInfoA.td"
 
 // Validate instruction used to verify pointers before dereferencing
 def riscv_validate : MyInst<(outs), (ins GPR64:$rs1, GPR64:$rs2 ), "val\t$rs1, $rs2", [(set (int_riscv_validate GPR64:$rs1, GPR64:$rs2))]>;
+def riscv_hash : MyInst<(outs GPR64:$rd), (ins GPR64:$rs), "hash\t$rd, $rs", [(set GPR64:$rd, (int_riscv_hash GPR64:$rs))]>;
