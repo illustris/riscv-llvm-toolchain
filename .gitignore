@@ -1,1 +1,6 @@
 Makefile
+config.log
+build-llvm
+config.status
+riscv-llvm-toolchain
+stamps
