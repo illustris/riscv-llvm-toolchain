@@ -1,0 +1,39 @@
+SRC=@SRC@
+TESTSUITE=@TESTSUITE@
+DEJAGNULIBS=@DEJAGNULIBS@
+export DEJAGNULIBS
+RUNTESTFLAGS=@RUNTESTFLAGS@
+RUN_PATH=@RUN_PATH@
+PATH:=$(RUN_PATH):$(PATH)
+export PATH
+
+
+clean:
+	rm -rf gcc.log gcc.sum *.bc *.s gcc *.filtered
+echo:
+	echo $(PATH)
+
+exe: clean site.exp
+	mkdir -p gcc
+	ln -s -f ../site.exp gcc/site.exp
+	cd gcc && runtest --tool gcc $(RUNTESTFLAGS) execute.exp
+
+parallel.mak: $(SRC)/gen-parallel-test-rule
+	$(SRC)/gen-parallel-test-rule $(TESTSUITE) gcc > parallel.mak
+
+all-parallel: clean site.exp parallel.mak
+	$(MAKE) do-parallel-test
+	cp gcc/gcc.* .
+
+all: clean site.exp
+	mkdir -p gcc
+	ln -s -f ../site.exp gcc/site.exp
+	cd gcc && runtest --tool gcc $(RUNTESTFLAGS)
+
+filter:
+	$(SRC)/filter.py $(SRC)/ignore.list
+
+single-test:
+	runtest --tool gcc $(RUNTESTFLAGS) $(EXP)="$(TEST)"
+
+-include parallel.mak

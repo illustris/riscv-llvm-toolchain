@@ -1,0 +1,93 @@
+srcdir := @abs_top_srcdir@
+builddir := @abs_top_builddir@
+INSTALL_DIR := @prefix@
+
+WITH_ARCH ?= @WITH_ARCH@
+BUILD_TYPE ?= @WITH_BUILD_TYPE@
+SYSROOT := $(INSTALL_DIR)/sysroot
+CMAKE := @CMAKE@
+BUILD_CLANG_ONLY := @BUILD_CLANG_ONLY@
+
+XLEN := $(shell echo $(WITH_ARCH) | tr A-Z a-z | sed 's/.*rv\([0-9]*\).*/\1/')
+ifneq ($(XLEN),32)
+        XLEN := 64
+endif
+
+ifeq ($(BUILD_CLANG_ONLY),no)
+  LLVM_BUILD_TARGET   :=all
+  LLVM_INSTALL_TARGET :=install
+else
+  LLVM_BUILD_TARGET   :=clang
+  LLVM_INSTALL_TARGET := install-clang
+endif
+
+make_tuple = riscv$(1)-unknown-$(2)
+NEWLIB_TUPLE ?= $(call make_tuple,$(XLEN),elf)
+
+CLANG_WRAPPERS := $(addprefix $(INSTALL_DIR)/bin/$(NEWLIB_TUPLE)-, clang clang++)
+
+install: install-llvm install-riscv-gnu-toolchain
+
+all: all-llvm stamps/build-riscv-gnu-toolchain
+
+$(INSTALL_DIR)/bin/$(NEWLIB_TUPLE)-%: build-llvm/bin/%
+	cp $(srcdir)/clang-wrapper $@
+	sed -i 's/@CLANG@/$(notdir $<)/' $@
+	sed -i 's/@TARGET@/$(NEWLIB_TUPLE)/' $@
+	sed -i 's/@ARCH@/$(WITH_ARCH)/' $@
+
+build-llvm/bin/clang: all-llvm
+build-llvm/bin/clang++: all-llvm
+
+stamps/configure-llvm: $(srcdir)/riscv-llvm $(srcdir)/riscv-clang
+	mkdir -p build-llvm
+	cd build-llvm && \
+	$(CMAKE) $(srcdir)/riscv-llvm \
+		-DCMAKE_INSTALL_PREFIX=$(INSTALL_DIR) \
+		-DLLVM_EXTERNAL_CLANG_SOURCE_DIR=$(srcdir)/riscv-clang \
+		-DLLVM_BINUTILS_INCDIR=$(srcdir)/riscv-gnu-toolchain/riscv-binutils-gdb/include \
+		-DLLVM_TARGETS_TO_BUILD=RISCV \
+		-DLLVM_DEFAULT_TARGET_TRIPLE=$(NEWLIB_TUPLE) \
+		-DCMAKE_BUILD_TYPE=$(BUILD_TYPE)
+	mkdir -p $(dir $@) && touch $@
+
+all-llvm: stamps/configure-llvm
+	cd build-llvm && $(MAKE) $(LLVM_BUILD_TARGET)
+
+install-llvm: all-llvm $(SYSROOT) $(CLANG_WRAPPERS)
+	cd build-llvm && $(MAKE) $(LLVM_INSTALL_TARGET)
+
+$(SYSROOT): stamps/build-riscv-gnu-toolchain
+	mkdir -p $(SYSROOT)
+	ln -s -r $(INSTALL_DIR)/$(NEWLIB_TUPLE)/ $(SYSROOT)/usr
+
+stamps/build-riscv-gnu-toolchain:
+	$(MAKE) -C riscv-gnu-toolchain
+	mkdir -p $(dir $@) && touch $@
+
+install-riscv-gnu-toolchain: stamps/build-riscv-gnu-toolchain
+	$(MAKE) -C riscv-gnu-toolchain install
+
+clean:
+	cd riscv-gnu-toolchain && $(MAKE) clean
+	rm -rf stamps build-llvm
+
+riscv-gnu-toolchain/stamps/build-qemu:
+	$(MAKE) -C riscv-gnu-toolchain stamps/build-qemu
+
+gcc-testsuite/Makefile: riscv-gnu-toolchain/stamps/build-qemu
+	mkdir -p $(dir $@)
+	cd $(dir $@) && \
+	$(srcdir)/extern-gcc-testsuite/configure \
+		--with-target-cc=$(INSTALL_DIR)/bin/$(NEWLIB_TUPLE)-clang \
+		--with-target-cxx=$(INSTALL_DIR)/bin/$(NEWLIB_TUPLE)-clang++ \
+		--target=$(NEWLIB_TUPLE) \
+		--with-target-sim=$(INSTALL_DIR)/bin/qemu-riscv$(XLEN) \
+		--with-target-board=riscv-sim
+
+check: gcc-testsuite/Makefile
+	cd gcc-testsuite && $(MAKE) all-parallel
+	cd gcc-testsuite && $(MAKE) filter
+	cp gcc-testsuite/gcc.log gcc-testsuite/gcc.log.filtered \
+	   gcc-testsuite/gcc.sum gcc-testsuite/gcc.sum.filtered \
+	   .

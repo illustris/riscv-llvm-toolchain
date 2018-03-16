@@ -1,0 +1,59 @@
+# Copyright (C) 1997, 1998, 1999, 2000, 2001, 2002, 2003 Free Software
+# Foundation, Inc.
+#
+# This file is part of DejaGnu.
+#
+# DejaGnu is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# DejaGnu is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with DejaGnu; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.
+
+set_board_info gdb,start_symbol "_start"
+
+# No multilib flags needed by default.
+process_multilib_options ""
+set_board_info netport $env(GDBTEST_HOST):$env(GDBTEST_PORT)
+set_board_info gdb,no_hardware_watchpoints 0
+set_board_info needs_status_wrapper 0
+set_board_info noargs 1
+set_board_info gdb,nosignals 1
+set_board_info exit_is_reliable 1
+set ice_ldflags "[libgloss_link_flags] [newlib_link_flags] -mvh"
+
+if {[info exists ::env(AE210P_DLMB)] && [info exists ::env(AE210P_LDS)]} {
+    set ae210p_stack [format %x [expr $env(AE210P_DLMB) + 0x80000]]
+    append ice_ldflags " -Wl,--defsym=__ae210p_dlmb=$env(AE210P_DLMB) -Wl,--defsym=_stack=0x$ae210p_stack -Wl,-T,$env(AE210P_LDS)"
+}
+
+set_board_info ldflags $ice_ldflags
+
+# We will be using the standard GDB remote protocol
+set_board_info gdb_protocol "remote"
+
+# Set timeout to 100 seconds
+set_board_info gdb,timeout  100
+
+# Skip gdb.base/huge.exp.
+# To clear the huge data on .bss section, some controller registers will
+# be modified.
+set_board_info gdb,skip_huge_test 1
+
+# Load the generic configuration for this board. This will define a basic set
+# of routines needed by the tool to communicate with the board.
+load_generic_config "nds32-ice"
+load_generic_config "sid"
+
+# unset protocol = "sim"
+unset_board_info protocol
+
+# Use the alike flow as gdbserver
+set_board_info gdb,do_reload_on_run 1

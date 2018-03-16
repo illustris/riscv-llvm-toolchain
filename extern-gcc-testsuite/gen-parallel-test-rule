@@ -1,0 +1,43 @@
+#! /usr/bin/env python2
+
+import os
+import sys
+
+def usage():
+    print "%s <path-to-gcc-testsuite> [gcc[,g++]]" % sys.argv[0]
+
+if len(sys.argv) != 3:
+    usage()
+    sys.exit(1)
+
+testsuite_path = os.path.abspath(os.path.normpath(sys.argv[1]))
+support_langs = ['gcc', 'g++']
+langs = sys.argv[2].split(",")
+exps = set()
+for lang in langs:
+    if lang not in support_langs:
+        raise Exception("Unsupport lang: %s" % lang)
+
+    for root, dirs, files in os.walk(testsuite_path):
+        folder = root[len(testsuite_path)+1:]
+        if folder.find(os.sep) != -1:
+            folder = folder[:folder.find(os.sep)]
+        if not folder.startswith(lang):
+            continue
+
+        for file in files:
+            if file.endswith(".exp"):
+                exps.add(file)
+    print "do-%s-test: %s\n" % (lang, " ".join(map(lambda a: "%s/%s/%s.log" % (lang, a, lang), exps)))
+    print "\t-cd %s && $(SRC)/dg-extract-results.sh -L *.exp/%s.log > %s.log" % (lang, lang, lang)
+    print "\t-cd %s && $(SRC)/dg-extract-results.sh *.exp/%s.sum > %s.sum" % (lang, lang, lang)
+
+    for exp in exps:
+        print "%s: %s/%s/%s.log" % (exp, lang, exp, lang)
+        print ""
+        print "%s/%s/%s.log: site.exp" % (lang, exp, lang)
+        print "\tmkdir -p %s/%s" % (lang, exp)
+        print "\tln -s -f ../../site.exp %s/%s/site.exp" % (lang, exp)
+        print "\t-cd %s/%s && runtest --tool %s $(RUNTESTFLAGS) %s" % (lang, exp, lang, exp)
+
+print "do-parallel-test: %s" % " ".join(map(lambda a: "do-%s-test" % a, langs))

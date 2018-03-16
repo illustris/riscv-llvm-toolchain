@@ -1,0 +1,2621 @@
+# error: inline asm not supported yet: don't know how to handle tied indirect register inputs
+gcc.c-torture/compile/20000804-1.c
+
+# error: initializer element is not a compile-time constant
+gcc.c-torture/compile/20001116-1.c
+
+# nested function
+gcc.c-torture/compile/20010226-1.c
+gcc.c-torture/compile/20010605-1.c
+gcc.c-torture/compile/20010903-2.c
+gcc.c-torture/compile/20011023-1.c
+gcc.c-torture/compile/20020309-1.c
+gcc.c-torture/compile/20021204-1.c
+gcc.c-torture/compile/20030418-1.c
+gcc.c-torture/compile/20031011-1.c
+gcc.c-torture/compile/20040310-1.c
+gcc.c-torture/compile/20040323-1.c
+gcc.c-torture/compile/20050119-1.c
+gcc.c-torture/compile/20050122-2.c
+gcc.c-torture/compile/20060109-1.c
+gcc.c-torture/compile/920415-1.c
+gcc.c-torture/compile/951116-1.c
+gcc.c-torture/compile/nested-1.c
+gcc.c-torture/compile/nested-2.c
+gcc.c-torture/compile/pr21728.c
+gcc.c-torture/compile/20040317-3.c
+gcc.c-torture/compile/pr35006.c
+gcc.c-torture/execute/20010209-1.c
+gcc.c-torture/execute/20030501-1.c
+gcc.c-torture/execute/20040520-1.c
+gcc.c-torture/execute/20061220-1.c
+gcc.c-torture/execute/20090219-1.c
+gcc.c-torture/execute/920612-2.c
+gcc.c-torture/execute/921017-1.c
+gcc.c-torture/execute/nest-align-1.c
+gcc.c-torture/execute/nest-stdar-1.c
+gcc.c-torture/execute/nestfunc-7.c
+gcc.c-torture/execute/pr22061-3.c
+gcc.c-torture/execute/pr22061-4.c
+gcc.c-torture/execute/pr51447.c
+gcc.dg/debug/debug-3.c
+gcc.dg/debug/debug-4.c
+gcc.dg/debug/debug-5.c
+gcc.dg/debug/pr16676.c
+gcc.dg/debug/dwarf2/pr37726.c
+gcc.dg/20011130-1.c
+gcc.dg/20030331-2.c
+gcc.dg/20031218-2.c
+gcc.dg/20031218-3.c
+gcc.dg/20050607-1.c
+gcc.dg/cleanup-7.c
+gcc.dg/inline-28.c
+gcc.dg/inline-29.c
+gcc.dg/inline-30.c
+gcc.dg/nested-func-10.c
+gcc.dg/nested-func-5.c
+gcc.dg/nested-func-7.c
+gcc.dg/nested-func-8.c
+gcc.dg/nested-func-9.c
+gcc.dg/non-local-goto-1.c
+gcc.dg/non-local-goto-2.c
+gcc.dg/pr18963-1.c
+gcc.dg/pr23547.c
+gcc.dg/pr30045.c
+gcc.dg/pr49994-1.c
+gcc.dg/pr59011.c
+gcc.dg/pr59920-3.c
+gcc.dg/gomp/nestedfn-1.c
+gcc.dg/gomp/pr66633-1.c
+gcc.dg/gomp/pr66633-3.c
+gcc.dg/lto/pr55703_0.c
+gcc.dg/lto/pr55703
+gcc.dg/lto/pr59323-2_0.c
+gcc.dg/lto/pr59323_0.c
+gcc.dg/lto/pr59323
+gcc.dg/torture/nested-fn-1.c
+gcc.dg/torture/pr57036-2.c
+gcc.dg/torture/pr8081.c
+gcc.dg/torture/stackalign/nested-1.c
+gcc.dg/torture/stackalign/nested-2.c
+gcc.dg/torture/stackalign/nested-3.c
+gcc.dg/torture/stackalign/nested-4.c
+gcc.dg/torture/stackalign/non-local-goto-1.c
+gcc.dg/torture/stackalign/non-local-goto-2.c
+gcc.c-torture/execute/20010605-1.c
+
+# Not support dynamic array size
+# fields must have a constant size: 
+# 'variable length array in structure' extension will never be supported
+gcc.c-torture/compile/pr39394.c
+gcc.c-torture/compile/pr42956.c
+gcc.c-torture/execute/20020412-1.c
+gcc.c-torture/execute/20040308-1.c
+gcc.c-torture/execute/20040423-1.c
+gcc.c-torture/execute/20041218-2.c
+gcc.c-torture/execute/20070919-1.c
+gcc.c-torture/execute/align-nest.c
+gcc.c-torture/execute/pr41935.c
+gcc.dg/debug/pr33316.c
+gcc.dg/debug/pr39412.c
+gcc.dg/20050527-1.c
+gcc.dg/packed-vla.c
+gcc.dg/pr19345.c
+gcc.dg/pr27301.c
+gcc.dg/pr30189.c
+gcc.dg/pr33238.c
+gcc.dg/pr47766.c
+gcc.dg/pr51990-2.c
+gcc.dg/vla-2.c
+gcc.dg/vla-22.c
+gcc.dg/lto/20090706-1_0.c
+gcc.dg/torture/pr48953.c
+gcc.dg/pr51990.c
+gcc.dg/compat/struct-by-value-22_x.c
+gcc.dg/compat/struct-by-value-22
+gcc.dg/pr34457-1.c
+gcc.dg/lto/20090706-1
+gcc.dg/lto/20081212-1
+gcc.dg/lto/20091209-1
+
+# Not support atomic load operations
+gcc.c-torture/compile/20061005-1.c
+gcc.dg/atomic-generic-aux.c
+gcc.dg/atomic-generic.c
+gcc.dg/atomic-lockfree-aux.c
+gcc.dg/atomic-lockfree.c
+gcc.dg/atomic-noinline-aux.c
+gcc.dg/atomic-noinline.c
+
+# error: redefinition of a 'extern inline' function 'foo' is not supported in C99 mode
+gcc.c-torture/compile/20011119-1.c
+gcc.c-torture/compile/20011119-2.c
+
+# error: non-void function 'foo' should return a value
+gcc.c-torture/compile/20020418-1.c
+gcc.c-torture/compile/20020927-1.c
+
+# error: fields must have a constant size: 'variable length array in structure' extension will never be supported
+gcc.c-torture/compile/20020210-1.c
+gcc.c-torture/compile/20030224-1.c
+gcc.c-torture/compile/20030716-1.c
+gcc.c-torture/compile/20050801-2.c
+gcc.c-torture/compile/920428-4.c
+gcc.c-torture/compile/920501-16.c
+gcc.c-torture/compile/pr27889.c
+
+# test for error message
+gcc.c-torture/compile/20030305-1.c
+gcc.c-torture/compile/pr28865.c
+gcc.dg/spellcheck-options-
+gcc.dg/pr28322-3.c
+gcc.dg/20010516-1.c
+gcc.dg/20020122-1.c
+gcc.dg/20030625-1.c
+gcc.dg/20031111-1.c
+gcc.dg/20031222-1.c
+gcc.dg/20031223-1.c
+gcc.dg/20040322-1.c
+gcc.dg/20040910-1.c
+gcc.dg/20040920-1.c
+gcc.dg/20041014-1.c
+gcc.dg/20050121-1.c
+gcc.dg/20050209-1.c
+gcc.dg/20050620-1.c
+gcc.dg/20051207-3.c
+gcc.dg/20081223-1.c
+gcc.dg/940510-1.c
+gcc.dg/20010516-1.c
+gcc.dg/990213-1.c
+gcc.dg/990506-0.c
+gcc.dg/O16384.c
+gcc.dg/asm-6.c
+gcc.dg/asm-7.c
+gcc.dg/asm-10.c
+gcc.dg/asm-qual-1.c
+gcc.dg/asm-wide-1.c
+gcc.dg/atomic-fetch-bool.c
+gcc.dg/attr-assume_aligned-2.c
+gcc.dg/attr-error-1.c
+gcc.dg/attr-mode-1.c
+gcc.dg/auto-type-2.c
+gcc.dg/bad-binary-ops.c
+gcc.dg/bad-dereference.c
+gcc.dg/binary-constants-2.c
+gcc.dg/binary-constants-3.c
+gcc.dg/binary-constants-4.c
+gcc.dg/bitfld-1.c
+gcc.dg/bitfld-10.c
+gcc.dg/bitfld-11.c
+gcc.dg/bitfld-12.c
+gcc.dg/bitfld-13.c
+gcc.dg/bitfld-14.c
+gcc.dg/bitfld-17.c
+gcc.dg/bitfld-18.c
+gcc.dg/bitfld-2.c
+gcc.dg/bitfld-22.c
+gcc.dg/bitfld-7.c
+gcc.dg/bitfld-8.c
+gcc.dg/boolcomplex-1.c
+gcc.dg/builtin-choose-expr-2.c
+gcc.dg/builtin-complex-err-1.c
+gcc.dg/builtins-28.c
+gcc.dg/builtins-68.c
+gcc.dg/c11-align-3.c
+gcc.dg/c11-align-4.c
+gcc.dg/c11-align-5.c
+gcc.dg/c11-anon-struct-2.c
+gcc.dg/c11-atomic-3.c
+gcc.dg/c11-generic-2.c
+gcc.dg/c11-noreturn-1.c
+gcc.dg/c11-noreturn-2.c
+gcc.dg/c11-noreturn-5.c
+gcc.dg/c11-pointer-float-1.c
+gcc.dg/c11-static-assert-2.c
+gcc.dg/c11-static-assert-3.c
+gcc.dg/c11-static-assert-4.c
+gcc.dg/c11-typedef-1.c
+gcc.dg/c11-uni-string-2.c
+gcc.dg/c90-array-lval-1.c
+gcc.dg/c90-array-lval-3.c
+gcc.dg/c90-array-lval-5.c
+gcc.dg/c90-array-lval-6.c
+gcc.dg/c90-array-lval-7.c
+gcc.dg/c90-array-lval-8.c
+gcc.dg/c90-const-expr-11.c
+gcc.dg/c90-const-expr-5.c
+gcc.dg/c90-const-expr-6.c
+gcc.dg/c90-const-expr-7.c
+gcc.dg/c90-dupqual-1.c
+gcc.dg/c90-hexfloat-1.c
+gcc.dg/c90-restrict-1.c
+gcc.dg/c90-static-1.c
+gcc.dg/c90-typedef-1.c
+gcc.dg/c99-array-nonobj-1.c
+gcc.dg/c99-arraydecl-1.c
+gcc.dg/c99-arraydecl-2.c
+gcc.dg/c99-bool-2.c
+gcc.dg/c90-typespec-1.c
+gcc.dg/c99-const-expr-12.c
+gcc.dg/c99-const-expr-5.c
+gcc.dg/c99-const-expr-6.c
+gcc.dg/c99-const-expr-7.c
+gcc.dg/c99-flex-array-1.c
+gcc.dg/c99-flex-array-2.c
+gcc.dg/c99-flex-array-5.c
+gcc.dg/c99-flex-array-typedef-1.c
+gcc.dg/c99-flex-array-typedef-2.c
+gcc.dg/c99-flex-array-typedef-5.c
+gcc.dg/c99-flex-array-typedef-8.c
+gcc.dg/c99-func-2.c
+gcc.dg/c99-hexfloat-3.c
+gcc.dg/c99-impl-int-1.c
+gcc.dg/c99-init-2.c
+gcc.dg/c99-init-3.c
+gcc.dg/c99-intconst-2.c
+gcc.dg/c99-restrict-1.c
+gcc.dg/c99-restrict-2.c
+gcc.dg/c99-restrict-3.c
+gcc.dg/c99-static-1.c
+gcc.dg/c90-idem-qual-1.c
+gcc.dg/c90-idem-qual-2.c
+gcc.dg/c90-idem-qual-3.c
+gcc.dg/c90-impl-int-2.c
+gcc.dg/c90-init-1.c
+gcc.dg/c90-left-shift-2.c
+gcc.dg/c90-longlong-1.c
+gcc.dg/c90-mixdecl-1.c
+gcc.dg/c90-static-assert-1.c
+gcc.dg/c90-vla-1.c
+gcc.dg/c99-align-1.c
+gcc.dg/c99-anon-struct-1.c
+gcc.dg/c99-array-lval-2.c
+gcc.dg/c99-array-lval-4.c
+gcc.dg/c99-bool-3.c
+gcc.dg/c99-complex-3.c
+gcc.dg/c99-const-expr-9.c
+gcc.dg/c99-dupqual-1.c
+gcc.dg/c99-flex-array-3.c
+gcc.dg/c99-flex-array-7.c
+gcc.dg/c99-flex-array-typedef-3.c
+gcc.dg/c99-flex-array-typedef-7.c
+gcc.dg/c99-func-3.c
+gcc.dg/c99-idem-qual-2.c
+gcc.dg/c99-impl-int-2.c
+gcc.dg/c99-init-1.c
+gcc.dg/c99-init-6.c
+gcc.dg/c99-static-assert-1.c
+gcc.dg/c99-stdint-2.c
+gcc.dg/c99-tag-3.c
+gcc.dg/pr40172-3.c
+c99-tag-1.c
+c99-tag-2.c
+c99-vla-jump-1.c
+c99-vla-jump-2.c
+c99-vla-jump-3.c
+c99-vla-jump-4.c
+c99-vla-jump-5.c
+gcc.dg/call-diag-1.c
+gcc.dg/call-diag-2.c
+gcc.dg/case-bogus-1.c
+gcc.dg/cast-1.c
+gcc.dg/cast-2.c
+gcc.dg/cast-3.c
+gcc.dg/cast-lvalue-1.c
+gcc.dg/cast-lvalue-2.c
+gcc.dg/cast-pretty-print-1.c
+gcc.dg/cast-qual-1.c
+gcc.dg/comp-return-1.c
+gcc.dg/compound-literal-1.c
+gcc.dg/compound-lvalue-1.c
+gcc.dg/concat.c
+gcc.dg/cond-lvalue-1.c
+gcc.dg/conv-2.c
+gcc.dg/cwsc0.c
+gcc.dg/decl-10.c
+gcc.dg/decl-2.c
+gcc.dg/decl-3.c
+gcc.dg/decl-4.c
+gcc.dg/decl-7.c
+gcc.dg/decl-8.c
+gcc.dg/decl-9.c
+gcc.dg/decl-nospec-3.c
+gcc.dg/declspec-1.c
+gcc.dg/declspec-10.c
+gcc.dg/declspec-11.c
+gcc.dg/declspec-13.c
+gcc.dg/declspec-15.c
+gcc.dg/declspec-16.c
+gcc.dg/declspec-17.c
+gcc.dg/declspec-18.c
+gcc.dg/declspec-4.c
+gcc.dg/declspec-5.c
+gcc.dg/declspec-6.c
+gcc.dg/declspec-7.c
+gcc.dg/declspec-8.c
+gcc.dg/declspec-9.c
+gcc.dg/deprecated.c
+gcc.dg/diag-aka-1.c
+gcc.dg/diagnostic-range-bad-called-object.c
+gcc.dg/diagnostic-range-bad-return.c
+gcc.dg/diagnostic-range-static-assert.c
+gcc.dg/diagnostic-ranges-1.c
+gcc.dg/diagnostic-token-ranges.c
+gcc.dg/diagnostic-tree-expr-ranges-2.c
+gcc.dg/dollar.c
+gcc.dg/enum-compat-1.c
+gcc.dg/enum-incomplete-1.c
+gcc.dg/enum3.c
+gcc.dg/fixits.c
+gcc.dg/float-range-1.c
+gcc.dg/float-range-3.c
+gcc.dg/float-range-4.c
+gcc.dg/float-range-5.c
+gcc.dg/fltconst-1.c
+gcc.dg/fold-nonneg-1.c
+gcc.dg/for-1.c
+gcc.dg/func-args-1.c
+gcc.dg/func-args-2.c
+gcc.dg/func-outside-1.c
+gcc.dg/func-outside-2.c
+gcc.dg/func-ptr-conv-1.c
+gcc.dg/funcdef-storage-1.c
+gcc.dg/funcdef-var-1.c
+gcc.dg/funcdef-var-2.c
+gcc.dg/incomplete-typedef-1.c
+gcc.dg/pr15236.c
+gcc.dg/pr15698-1.c
+gcc.dg/pr17112-1.c
+gcc.dg/pr29521-2.c
+gcc.dg/comp-goto-2.c
+gcc.dg/comp-goto-3.c
+gcc.dg/declspec-12.c
+gcc.dg/declspec-14.c
+gcc.dg/declspec-2.c
+gcc.dg/dremf-type-compat-1.c
+gcc.dg/dremf-type-compat-2.c
+gcc.dg/dremf-type-compat-3.c
+gcc.dg/empty-source-2.c
+gcc.dg/empty-source-3.c
+gcc.dg/extra-semi-2.c
+gcc.dg/extra-semi-3.c
+gcc.dg/gnu-cond-expr-2.c
+gcc.dg/gnu-cond-expr-3.c
+gcc.dg/init-empty-2.c
+gcc.dg/init-empty-3.c
+gcc.dg/lvalue-6.c
+gcc.dg/lvalue-7.c
+gcc.dg/old-style-prom-1.c
+gcc.dg/old-style-prom-2.c
+gcc.dg/old-style-prom-3.c
+gcc.dg/pointer-arith-7.c
+gcc.dg/pointer-arith-8.c
+init-bad-1.c
+init-bad-2.c
+init-bad-3.c
+init-bad-4.c
+init-bad-5.c
+init-bad-6.c
+init-bad-7.c
+init-bad-8.c
+gcc.dg/init-desig-obs-1.c
+gcc.dg/init-excess-1.c
+gcc.dg/init-string-2.c
+gcc.dg/init-undef-1.c
+gcc.dg/initpri2.c
+gcc.dg/inline-11.c
+gcc.dg/inline-12.c
+gcc.dg/inline-14.c
+gcc.dg/inline-25.c
+gcc.dg/inline-26.c
+gcc.dg/inline-27.c
+gcc.dg/inline-34.c
+gcc.dg/inline-5.c
+gcc.dg/inline-8.c
+gcc.dg/inline-9.c
+gcc.dg/inline1.c
+gcc.dg/inline3.c
+gcc.dg/inline4.c
+gcc.dg/inline7.c
+gcc.dg/label-compound-stmt-1.c
+gcc.dg/label-decl-1.c
+gcc.dg/label-decl-2.c
+gcc.dg/label-decl-3.c
+gcc.dg/label-decl-4.c
+gcc.dg/large-size-array-3.c
+gcc.dg/long-long-typespec-1.c
+gcc.dg/lvalue-2.c
+gcc.dg/lvalue-3.c
+gcc.dg/lvalue-4.c
+gcc.dg/lvalue-8.c
+gcc.dg/lvalue1.c
+gcc.dg/m-un-2.c
+gcc.dg/misc-column.c
+gcc.dg/mismatch-decl-1.c
+gcc.dg/missing-field-init-2.c
+gcc.dg/multiple-overflow-warn-2.c
+gcc.dg/multiple-overflow-warn-3.c
+gcc.dg/nested-func-1.c
+gcc.dg/nested-func-2.c
+gcc.dg/nested-func-3.c
+gcc.dg/nested-func-6.c
+gcc.dg/nested-redef-1.c
+gcc.dg/no-asm-1.c
+gcc.dg/no-asm-3.c
+gcc.dg/no-asm-4.c
+gcc.dg/nofixed-point-1.c
+gcc.dg/nofixed-point-2.c
+gcc.dg/nonnull-1.c
+gcc.dg/nonnull-2.c
+gcc.dg/old-style-param-1.c
+gcc.dg/old-style-then-proto-1.c
+gcc.dg/opts-3.c
+gcc.dg/opts-6.c
+gcc.dg/ordered-comparison-1.c
+gcc.dg/ordered-comparison-2.c
+gcc.dg/ordered-comparison-3.c
+gcc.dg/ordered-comparison-4.c
+gcc.dg/overflow-2.c
+gcc.dg/parm-forwdecl-1.c
+gcc.dg/parm-forwdecl-2.c
+gcc.dg/parm-forwdecl-3.c
+gcc.dg/parm-forwdecl-4.c
+gcc.dg/parm-impl-decl-1.c
+gcc.dg/parm-impl-decl-2.c
+gcc.dg/parm-impl-decl-3.c
+gcc.dg/parm-incomplete-1.c
+gcc.dg/parm-mismatch-1.c
+gcc.dg/parse-decl-after-if.c
+gcc.dg/parse-decl-after-label.c
+gcc.dg/parse-else-error-2.c
+gcc.dg/parse-else-error-3.c
+gcc.dg/parse-else-error-4.c
+gcc.dg/parse-else-error.c
+gcc.dg/parse-error-1.c
+gcc.dg/parse-error-2.c
+gcc.dg/parse-error-3.c
+gcc.dg/parser-pr28152-2.c
+gcc.dg/parser-pr28152.c
+gcc.dg/pointer-arith-1.c
+gcc.dg/pointer-arith-2.c
+gcc.dg/pointer-arith-3.c
+gcc.dg/pointer-arith-4.c
+gcc.dg/pointer-arith-6.c
+gcc.dg/pr13519-1.c
+gcc.dg/pr13804-1.c
+gcc.dg/pr14475.c
+gcc.dg/pr14649-1.c
+gcc.dg/pr14765-1.c
+gcc.dg/pr14963.c
+gcc.dg/pr15360-1.c
+gcc.dg/pr15698-2.c
+gcc.dg/pr15698-3.c
+gcc.dg/pr15698-4.c
+gcc.dg/pr15698-5.c
+gcc.dg/pr15698-7.c
+gcc.dg/pr17188-1.c
+gcc.dg/pr17301-1.c
+gcc.dg/pr17301-2.c
+gcc.dg/pr17424-1.c
+gcc.dg/pr17730-1.c
+gcc.dg/pr18164.c
+gcc.dg/pr18596-1.c
+gcc.dg/pr18596-2.c
+gcc.dg/pr18596-3.c
+gcc.dg/pr18725.c
+gcc.dg/pr18809-1.c
+gcc.dg/pr19984.c
+gcc.dg/pr20245-1.c
+gcc.dg/pr20368-1.c
+gcc.dg/pr20368-2.c
+gcc.dg/pr20368-3.c
+gcc.dg/pr20672-1.c
+gcc.dg/pr21085.c
+gcc.dg/pr21419.c
+gcc.dg/pr22231.c
+gcc.dg/pr22458-1.c
+gcc.dg/pr23075.c
+gcc.dg/pr24293.c
+gcc.dg/pr25559.c
+gcc.dg/pr25801.c
+gcc.dg/pr27428-1.c
+gcc.dg/pr27528.c
+gcc.dg/pr27953.c
+gcc.dg/pr28419.c
+gcc.dg/pr29736.c
+gcc.dg/pr30260.c
+gcc.dg/pr30457.c
+gcc.dg/pr30551-2.c
+gcc.dg/pr30551-3.c
+gcc.dg/pr30551-4.c
+gcc.dg/pr30551-5.c
+gcc.dg/pr30551-6.c
+gcc.dg/pr30551.c
+gcc.dg/pr3074-1.c
+gcc.dg/pr30949.c
+gcc.dg/pr32041.c
+gcc.dg/pr35440.c
+gcc.dg/pr35442.c
+gcc.dg/pr35443.c
+gcc.dg/pr35445.c
+gcc.dg/pr37529.c
+gcc.dg/pr37561.c
+gcc.dg/pr37645.c
+gcc.dg/pr37772.c
+gcc.dg/pr37879.c
+gcc.dg/pr37985.c
+gcc.dg/pr38957.c
+gcc.dg/pr39084.c
+gcc.dg/pr40989.c
+gcc.dg/pr41842.c
+gcc.dg/pr43082.c
+gcc.dg/pr43211.c
+gcc.dg/pr45079.c
+gcc.dg/pr45461.c
+gcc.dg/pr45750.c
+gcc.dg/pr48552-1.c
+gcc.dg/pr48552-2.c
+gcc.dg/pr51034.c
+gcc.dg/pr51321.c
+gcc.dg/pr53196-1.c
+gcc.dg/pr53196-2.c
+gcc.dg/pr53532.c
+gcc.dg/pr54355.c
+gcc.dg/pr54363.c
+gcc.dg/pr55570.c
+gcc.dg/pr56724-1.c
+gcc.dg/pr56724-2.c
+gcc.dg/pr56724-3.c
+gcc.dg/pr56980.c
+gcc.dg/pr56989.c
+gcc.dg/pr58893.c
+gcc.dg/pr59351.c
+gcc.dg/pr59630.c
+gcc.dg/pr59827.c
+gcc.dg/pr59963-1.c
+gcc.dg/pr59963-2.c
+gcc.dg/pr60036.c
+gcc.dg/pr60087.c
+gcc.dg/pr61096-1.c
+gcc.dg/pr61096-2.c
+gcc.dg/pr61162-2.c
+gcc.dg/pr61852.c
+gcc.dg/pr63543.c
+gcc.dg/pr63549.c
+gcc.dg/pr64223-1.c
+gcc.dg/pr64223-2.c
+gcc.dg/pr64417.c
+gcc.dg/pr64423.c
+gcc.dg/pr64766.c
+gcc.dg/pr64778.c
+gcc.dg/pr64417.c
+gcc.dg/va-arg-2.c
+gcc.dg/noncompile/20000901-1.c
+gcc.dg/noncompile/20001228-1.c
+gcc.dg/noncompile/20010425-1.c
+gcc.dg/noncompile/20010524-1.c
+gcc.dg/noncompile/20011025-1.c
+gcc.dg/noncompile/20020130-1.c
+gcc.dg/noncompile/20020207-1.c
+gcc.dg/noncompile/20020207-1.c
+gcc.dg/noncompile/20020213-1.c
+gcc.dg/noncompile/20020220-1.c
+gcc.dg/noncompile/20030818-1.c
+gcc.dg/noncompile/20040203-1.c
+gcc.dg/noncompile/20040203-2.c
+gcc.dg/noncompile/20040203-3.c
+gcc.dg/noncompile/20040629-1.c
+gcc.dg/noncompile/20041207.c
+gcc.dg/noncompile/20050120-1.c
+gcc.dg/noncompile/920507-1.c
+gcc.dg/noncompile/920616-2.c
+gcc.dg/noncompile/920721-2.c
+gcc.dg/noncompile/920824-1.c
+gcc.dg/noncompile/920923-1.c
+gcc.dg/noncompile/921102-1.c
+gcc.dg/noncompile/921116-1.c
+gcc.dg/noncompile/930301-1.c
+gcc.dg/noncompile/930622-1.c
+gcc.dg/noncompile/930622-2.c
+gcc.dg/noncompile/930714-1.c
+gcc.dg/noncompile/931203-1.c
+gcc.dg/noncompile/940112-1.c
+gcc.dg/noncompile/940227-1.c
+gcc.dg/noncompile/950825-1.c
+gcc.dg/noncompile/950921-1.c
+gcc.dg/noncompile/951123-1.c
+gcc.dg/noncompile/971104-1.c
+gcc.dg/noncompile/990416-1.c
+gcc.dg/noncompile/const-ll-1.c
+gcc.dg/noncompile/incomplete-1.c
+gcc.dg/noncompile/incomplete-2.c
+gcc.dg/noncompile/incomplete-3.c
+gcc.dg/noncompile/incomplete-4.c
+gcc.dg/noncompile/incomplete-5.c
+gcc.dg/noncompile/init-1.c
+gcc.dg/noncompile/init-2.c
+gcc.dg/noncompile/init-3.c
+gcc.dg/noncompile/init-4.c
+gcc.dg/noncompile/init-5.c
+gcc.dg/noncompile/invalid_asm.c
+gcc.dg/noncompile/label-1.c
+gcc.dg/noncompile/label-lineno-1.c
+gcc.dg/noncompile/old-style-parm-1.c
+gcc.dg/noncompile/old-style-parm-2.c
+gcc.dg/noncompile/pr23576.c
+gcc.dg/noncompile/pr35444-1.c
+gcc.dg/noncompile/pr35444-2.c
+gcc.dg/noncompile/pr35447-1.c
+gcc.dg/noncompile/pr40033-1.c
+gcc.dg/noncompile/pr44517.c
+gcc.dg/noncompile/pr52290.c
+gcc.dg/noncompile/redecl-1.c
+gcc.dg/noncompile/undeclared-1.c
+gcc.dg/noncompile/undeclared-2.c
+gcc.dg/noncompile/va-arg-1.c
+gcc.dg/noncompile/voidparam-1.c
+
+# Test for spec
+gcc.dg/spec-options.c
+
+# error: indirect goto in function with no address-of-label expressions
+gcc.c-torture/compile/920502-1.c
+gcc.c-torture/compile/920826-1.c
+gcc.c-torture/compile/991213-3.c
+
+# error: invalid token at start of a preprocessor expression
+gcc.c-torture/compile/950919-1.c
+
+# error: 'asm goto' constructs are not supported yet
+gcc.c-torture/compile/asmgoto-1.c
+gcc.c-torture/compile/pr51767.c
+gcc.c-torture/compile/pr63282.c
+gcc.dg/54455.c
+gcc.dg/Woverlength-strings-pedantic-c89-asm.c
+gcc.dg/Woverlength-strings-pedantic-c90-asm.c
+gcc.dg/Woverlength-strings-pedantic-c99-asm.c
+gcc.dg/pr65980.c
+c-c++-common/asmgoto-3.c
+c-c++-common/asmgoto-4.c
+gcc.dg/torture/pr46068.c
+gcc.dg/torture/pr53589.c
+gcc.dg/torture/pr54127.c
+gcc.dg/torture/pr61772.c
+gcc.dg/tree-ssa/asmgoto-1.c
+gcc.dg/torture/pr51106-1.c
+gcc.dg/torture/pr51106-2.c
+gcc.dg/pr61692.c
+c-c++-common/asmgoto-2.c
+c-c++-common/pr51768.c
+
+# error: clang unsupport builtin functions
+# probably we could check could we add them later ?
+gcc.c-torture/compile/20071117-1.c
+gcc.c-torture/compile/20071214-1.c
+gcc.c-torture/compile/bcopy-1.c
+gcc.c-torture/execute/builtins/abs-3.c
+gcc.c-torture/execute/builtins/fprintf.c
+gcc.c-torture/execute/builtins/fputs.c
+gcc.c-torture/execute/builtins/memcpy-chk.c
+gcc.c-torture/execute/builtins/memmove-chk.c
+gcc.c-torture/execute/builtins/memmove.c
+gcc.c-torture/execute/builtins/mempcpy-chk.c
+gcc.c-torture/execute/builtins/memset-chk.c
+gcc.c-torture/execute/builtins/lib/chk.c
+gcc.c-torture/execute/builtins/printf.c
+gcc.c-torture/execute/builtins/snprintf-chk.c
+gcc.c-torture/execute/builtins/sprintf-chk.c
+gcc.c-torture/execute/builtins/stpcpy-chk.c
+gcc.c-torture/execute/builtins/stpncpy-chk.c
+gcc.c-torture/execute/builtins/strcat-chk.c
+gcc.c-torture/execute/builtins/strcpy-chk.c
+gcc.c-torture/execute/builtins/strncat-chk.c
+gcc.c-torture/execute/builtins/strncpy-chk.c
+gcc.c-torture/execute/builtins/vsnprintf-chk.c
+gcc.c-torture/execute/builtins/vsprintf-chk.c
+gcc.c-torture/execute/20071018-1.c
+gcc.c-torture/execute/20071120-1.c
+gcc.c-torture/execute/builtin-bitops-1.c
+gcc.c-torture/execute/pr36765.c
+gcc.c-torture/execute/pr39228.c
+gcc.c-torture/execute/pr43008.c
+gcc.c-torture/execute/pr47237.c
+gcc.dg/builtins-57.c
+gcc.dg/pr28796-1.c
+gcc.dg/pr28796-2.c
+gcc.dg/webizer.c
+gcc.dg/torture/builtin-attr-1.c
+gcc.dg/torture/builtin-frexp-1.c
+gcc.dg/torture/builtin-ldexp-1.c
+gcc.dg/torture/builtin-math-3.c
+gcc.dg/torture/builtin-math-4.c
+gcc.dg/torture/builtin-math-6.c
+gcc.dg/builtin-apply3.c
+gcc.dg/builtin-apply4.c
+gcc.dg/builtin-return-1.c
+gcc.dg/torture/builtin-minmax-1.c
+gcc.dg/torture/builtin-modf-1.c
+gcc.dg/torture/builtin-rounding-1.c
+gcc.dg/torture/pr53272-2.c
+gcc.dg/torture/pr53908.c
+gcc.dg/torture/pr57147-2.c
+gcc.dg/torture/type-generic-1.c
+gcc.dg/torture/stackalign/builtin-apply-3.c
+gcc.dg/torture/stackalign/builtin-apply-4.c
+gcc.dg/tree-ssa/ssa-dce-7.c
+gcc.dg/tree-ssa/ssa-dom-thread-8.c
+gcc.dg/torture/pr33560.c
+gcc.dg/torture/pr52402.c
+gcc.dg/torture/pr53272-2.c
+gcc.dg/torture/pr56661.c
+gcc.dg/torture/pr53272-1.c
+gcc.dg/tree-ssa/alias-33.c
+gcc.dg/pr40946.c
+
+# clang will show error: indirect goto in function with no address-of-label expressions
+gcc.c-torture/compile/920831-1.c
+gcc.c-torture/compile/pr30984.c
+gcc.c-torture/compile/pr58164.c
+gcc.c-torture/execute/920415-1.c
+gcc.c-torture/execute/920721-4.c
+gcc.c-torture/compile/920831-1.c
+gcc.c-torture/compile/pr30984.c
+gcc.c-torture/compile/pr58164.c
+gcc.c-torture/execute/920415-1.c
+gcc.dg/lto/pr55703_0.c # <= this case filter.py can't filter it out
+
+# invalid input constraint for inline assembly
+gcc.c-torture/compile/pr27528.c
+gcc.dg/ipa/ipa-sra-10.c
+gcc.dg/torture/pr67794.c
+gcc.dg/torture/stackalign/builtin-return-1.c
+gcc.dg/pr52355.c
+gcc.dg/pr57134.c
+gcc.dg/pr58805.c
+c-c++-common/pr67653.c
+
+# invalid instruction for inline assembly
+gcc.dg/asm-4.c
+
+# error: second parameter of 'main' (argument array) must be of type 'char **'
+gcc.c-torture/compile/call.c
+gcc.c-torture/compile/foo.c
+gcc.c-torture/compile/pr22269.c
+
+# error: bracket nesting level exceeded maximum of 256
+gcc.c-torture/compile/limits-declparen.c
+gcc.c-torture/compile/limits-exprparen.c
+gcc.c-torture/compile/limits-structnest.c
+
+# ICE due to too many functino decl
+gcc.c-torture/compile/limits-fndefn.c
+
+# error: invalid input constraint 's' in asm
+# gcc.c-torture/compile/pr27528.c
+
+# error: __builtin_setjmp is not supported for the current target
+gcc.c-torture/compile/20011029-1.c
+gcc.c-torture/compile/complex-6.c
+gcc.c-torture/execute/built-in-setjmp.c
+gcc.c-torture/execute/pr60003.c
+gcc.dg/pr26983.c
+gcc.dg/setjmp-3.c
+gcc.dg/setjmp-4.c
+gcc.dg/torture/stackalign/setjmp-1.c
+gcc.dg/torture/stackalign/setjmp-3.c
+gcc.dg/torture/stackalign/setjmp-4.c
+
+# The test case use to checking frontend error message
+# skip it
+gcc.c-torture/compile/pr48767.c
+
+#Checking frontend to optimize pure function,
+#clang is not optimize.
+## LLVM ARM backend will have same result
+gcc.dg/20050121-2.c
+
+# error :
+#       assigning to 'V' (vector of 32 'signed char' values) from incompatible type 'int'
+# arm clang will fail too.
+gcc.c-torture/compile/pr52750.c
+gcc.dg/pr64252.c
+
+# error: the clang compiler does not support '-traditional-cpp
+# clang not fully support -traditional-cpp
+gcc.dg/cpp/tr-paste.c
+gcc.dg/cpp/trad/assert1.c
+gcc.dg/cpp/trad/assert3.c
+gcc.dg/cpp/trad/funlike-4.c
+gcc.dg/cpp/trad/maccom3.c
+gcc.dg/cpp/trad/maccom4.c
+gcc.dg/cpp/trad/mi2.c
+gcc.dg/cpp/trad/mi3.c
+gcc.dg/cpp/trad/mi6.c
+gcc.dg/cpp/trad/paste.c
+gcc.dg/cpp/trad/pr65238-3.c
+gcc.dg/cpp/trad/strify.c
+gcc.dg/bitfld-9.c
+gcc.dg/cpp/trad/builtins.c
+gcc.dg/cpp/trad/literals-1.c
+gcc.dg/cpp/trad/macroargs.c
+gcc.dg/cpp/trad/mi1.c
+
+# clang will expect :
+# first parameter of 'main' (argument count) must be of type 'int'
+# second parameter of 'main' (argument array) must be of type 'char **
+gcc.c-torture/compile/v.c
+gcc.dg/tree-ssa/loadpre22.c
+gcc.dg/tree-ssa/loadpre18.c
+gcc.dg/tree-ssa/loadpre2.c
+gcc.dg/tree-ssa/loadpre21.c
+gcc.dg/tree-ssa/loadpre4.c
+gcc.dg/ipa/iinline-2.c
+gcc.dg/ipa/ipcp-ii-1.c
+gcc.dg/ipa/remref-2a.c
+gcc.dg/ipa/remref-2b.c
+gcc.dg/tree-ssa/pr59597.c
+gcc.dg/tree-ssa/reassoc-10.c
+gcc.dg/tree-ssa/reassoc-11.c
+gcc.dg/tree-ssa/reassoc-3.c
+gcc.dg/tree-ssa/reassoc-5.c
+gcc.dg/tree-ssa/reassoc-6.c
+gcc.dg/tree-ssa/reassoc-8.c
+gcc.dg/tree-ssa/reassoc-9.c
+
+# some flexible array feature not support by clang
+gcc.dg/Wc90-c99-compat-4.c
+gcc.dg/Wc90-c99-compat-5.c
+gcc.dg/pr56078.c
+gcc.c-torture/execute/pr28865.c
+
+# cannot convert between vector values of different size
+gcc.c-torture/execute/scal-to-vec1.c
+gcc.c-torture/execute/scal-to-vec2.c
+gcc.c-torture/execute/scal-to-vec3.c
+gcc.dg/pr53060.c
+gcc.dg/pr55027.c
+gcc.dg/pr57233.c
+gcc.dg/pr57286.c
+gcc.dg/pr59261.c
+gcc.dg/pr70405.c
+gcc.dg/vec-andxor1.c
+c-c++-common/scal-to-vec2.c
+c-c++-common/vector-scalar-2.c
+c-c++-common/vector-scalar.c
+gcc.dg/torture/pr69886.c
+gcc.dg/torture/pr70083.c
+gcc.dg/torture/pr70307.c
+gcc.dg/fold-minus-1.c
+gcc.dg/tree-ssa/forwprop-27.c
+gcc.dg/pr68134.c
+gcc.dg/simd-4.c
+
+# error : address of vector element requested
+gcc.dg/fold-cvect.c
+c-c++-common/torture/vector-subscript-1.c
+
+# error : initializer element is not a compile-time constant
+gcc.dg/Wc90-c99-compat-6.c
+gcc.dg/c11-complex-1.c
+gcc.dg/fold-reassoc-3.c
+gcc.dg/pr55019.c
+gcc.dg/torture/builtin-complex-1.c
+gcc.dg/torture/pr66178.c
+gcc.dg/pr36901-1.c
+gcc.dg/pr36901-2.c
+
+# ignore the testcase need gnu99 extension
+gcc.dg/cpp/utf8-5byte-1.c
+gcc.dg/Wc99-c11-compat-4.c
+gcc.dg/Wparentheses-10.c
+gcc.dg/fltconst-2.c
+gcc.dg/gnu99-init-1.c
+gcc.dg/inline-7.c
+gcc.dg/noreturn-5.c
+gcc.dg/pr18502-1.c
+gcc.dg/utf-inc-init.c
+gcc.dg/utf-type.c
+gcc.dg/utf16-1.c
+gcc.dg/utf16-2.c
+gcc.dg/utf16-3.c
+gcc.dg/utf32-1.c
+gcc.dg/utf32-2.c
+gcc.dg/utf32-3.c
+c-c++-common/raw-string-1.c
+c-c++-common/raw-string-10.c
+c-c++-common/raw-string-11.c
+c-c++-common/raw-string-12.c
+c-c++-common/raw-string-13.c
+c-c++-common/raw-string-15.c
+c-c++-common/raw-string-17.c
+c-c++-common/raw-string-18.c
+c-c++-common/raw-string-19.c
+c-c++-common/raw-string-2.c
+gcc.dg/gnu99-const-expr-1.c
+gcc.dg/gnu99-const-expr-2.c
+gcc.dg/gnu99-init-2.c
+gcc.dg/gnu99-static-1.c
+c-c++-common/Wmemset-transposed-args2.c
+
+# ignore the testcase need gnu89 extension
+gcc.dg/20040203-1.c
+gcc.dg/anon-struct-3.c
+gcc.dg/gnu89-const-expr-1.c
+gcc.dg/gnu89-const-expr-2.c
+gcc.dg/gnu89-dupqual-1.c
+gcc.dg/inline-6.c
+tree-ssa/20030731-1.c
+tree-ssa/ssa-ccp-2.c
+tree-ssa/ssa-dom-thread-9.c
+gcc.dg/inline-1.c
+gcc.dg/inline-24.c
+gcc.dg/memcpy-2.c
+gcc.dg/va-arg-pack-len-1.c
+
+# ignore the testcase need gnu90 extension
+gcc.dg/Wc90-c99-compat-7.c
+gcc.dg/gnu90-const-expr-1.c
+c-c++-common/Wshift-overflow-4.c
+
+# Not support __mulodi3/__muloti3 library functions
+# LLVM ARM/MIPS backend will have same result
+c-c++-common/torture/builtin-arith-overflow-3.c
+c-c++-common/torture/builtin-arith-overflow-12.c
+c-c++-common/torture/builtin-arith-overflow-13.c
+c-c++-common/torture/builtin-arith-overflow-14.c
+c-c++-common/torture/builtin-arith-overflow-18.c
+
+# Not support __muldi4 library functions
+# LLVM ARM backend will have same result
+gcc.dg/builtin-arith-overflow-2.c
+
+# GCC will expect the function call llabs could transfer to other instructions.
+# LLVM can't do it now. Perhaps, we could study the optimization
+# and make it work for LLVM.
+gcc.c-torture/execute/20021127-1.c
+
+# LLVM will transfer (int)2147483648.0f to 0 and when INT_MAX = 2147483647.
+# GCC will transfer (int)2147483648.0f to 2147483647.
+# According to C99 6.3.1.4
+# If the value of the integral part cannot be represented
+# by the integer type, the behavior is undefined.
+# So I guess the LLVM result is OK.
+# Correct the message if I just mis-understanding something.
+gcc.c-torture/execute/20031003-1.c
+
+# Label value is an extenstion that gcc/llvm support but not in C language standard.
+# The test case expect doit will inline and ptr1, ptr2 will get different value.
+# LLVM will fail due to different optimization behavior (will not inline doit).
+# Probably also due to different implementation for label value(Should the
+# function contain Label value access inline ?)
+gcc.c-torture/execute/990208-1.c
+
+# It seems that LLVM not support __attribute__((optimize .) attribute
+gcc.c-torture/execute/alias-1.c
+
+# LLVM default BIGGEST_ALIGNMENT > STACK_BOUNDARY
+# so the test case would fail
+gcc.c-torture/execute/alloca-1.c
+gcc.dg/torture/stackalign/alloca-1.c
+gcc.dg/torture/stackalign/inline-2.c
+gcc.dg/torture/stackalign/vararg-1.c
+gcc.dg/torture/stackalign/vararg-2.c
+
+# LLVM fail due to different optimization behavior
+# GCC could optimize opt0/opt1 return 1 directly.
+# check it later
+gcc.c-torture/execute/bcp-1.c
+
+# ignore the case due to LLVM could not determine __builtin_constant_p(x)
+# at compile time in this case.
+# __builtin_constant_p (x) will return 1 if x could determine as constant at compile time.
+# It's an optimization regression test, check it later.
+gcc.c-torture/execute/builtin-constant.c
+gcc.dg/addr_equal-1.c
+
+# It's a generic code bug and should fix on the maintrunk
+# reopen the case when we update the code base.
+# http://lists.llvm.org/pipermail/llvm-dev/2017-March/111240.html
+gcc.c-torture/execute/float-floor.c
+
+# GCC will optimize away __fprintf_chk by fwrite
+# LLVM won't do it
+gcc.c-torture/execute/fprintf-chk-1.c
+# GCC will optimize away some function call by puthchar
+# LLVM won't do it
+gcc.c-torture/execute/printf-chk-1.c
+# GCC will optimize away some function call by putc
+# LLVM won't do it
+gcc.c-torture/execute/vfprintf-chk-1.c
+gcc.c-torture/execute/vprintf-chk-1.c
+
+# The test case compile fail due to llvm have different inline behavior with gcc.
+gcc.c-torture/execute/va-arg-pack-1.c
+gcc.dg/torture/pr70123.c
+
+# The test case fail due to clang have different behavior for vector division.
+# f1 (v4qi v)
+# {
+#   return v / 2;
+# }
+# GCC expect v / {2, 2, 2, 2}, Clang will return v / {0, 0, 0, 2}
+# Does vector division have any spec to follow ?
+gcc.c-torture/execute/pr60960.c
+
+# It seems like a llvm have different result.
+# struct foo
+# {
+#   unsigned long long b:40;
+# } x;
+# GCC expect x.b:40 initial as 0x0100 should carry out to 0 after (x.b<<32)
+# (x.b << 32) will involve integer promotion.
+# However, the C standard didn't define the promotion rule
+# for the bit-field type width wider than int.
+# So the test case output should be the undefined behavior.
+gcc.c-torture/execute/pr32244-1.c
+gcc.c-torture/execute/bitfld-3.c
+gcc.c-torture/execute/bitfld-5.c
+gcc.c-torture/execute/pr34971.c
+gcc.dg/torture/20110718-1.c
+
+# LLVM not support __builtin_shuffle for vector type
+c-c++-common/torture/vshuf-v16hi.c
+c-c++-common/torture/vshuf-v16qi.c
+c-c++-common/torture/vshuf-v2df.c
+c-c++-common/torture/vshuf-v2di.c
+c-c++-common/torture/vshuf-v2sf.c
+c-c++-common/torture/vshuf-v2si.c
+c-c++-common/torture/vshuf-v4df.c
+c-c++-common/torture/vshuf-v4di.c
+c-c++-common/torture/vshuf-v4hi.c
+c-c++-common/torture/vshuf-v4sf.c
+c-c++-common/torture/vshuf-v4si.c
+c-c++-common/torture/vshuf-v8hi.c
+c-c++-common/torture/vshuf-v8qi.c
+c-c++-common/torture/vshuf-v8si.c
+gcc.dg/torture/vector-shuffle1.c
+gcc.dg/torture/vshuf-v16hi.c
+gcc.dg/torture/vshuf-v16qi.c
+gcc.dg/torture/vshuf-v16sf.c
+gcc.dg/torture/vshuf-v16si.c
+gcc.dg/torture/vshuf-v2df.c
+gcc.dg/torture/vshuf-v2di.c
+gcc.dg/torture/vshuf-v2sf.c
+gcc.dg/torture/vshuf-v2si.c
+gcc.dg/torture/vshuf-v32hi.c
+gcc.dg/torture/vshuf-v32qi.c
+gcc.dg/torture/vshuf-v4df.c
+gcc.dg/torture/vshuf-v4di.c
+gcc.dg/torture/vshuf-v4hi.c
+gcc.dg/torture/vshuf-v4sf.c
+gcc.dg/torture/vshuf-v4si.c
+gcc.dg/torture/vshuf-v64qi.c
+gcc.dg/torture/vshuf-v8df.c
+gcc.dg/torture/vshuf-v8di.c
+gcc.dg/torture/vshuf-v8hi.c
+gcc.dg/torture/vshuf-v8qi.c
+gcc.dg/torture/vshuf-v8sf.c
+gcc.dg/torture/vshuf-v8si.c
+
+# ignore the test case due to llvm have different warning message
+gcc.dg/torture/Wsizeof-pointer-memaccess1.c
+gcc.dg/torture/pr25183.c
+gcc.dg/special/20000419-2.c
+gcc.dg/torture/pr42363.c
+gcc.dg/torture/pr59891.c
+gcc.dg/torture/pr66945.c
+gcc.c-torture/compile/sync-1.c
+gcc.c-torture/compile/sync-2.c
+gcc.c-torture/compile/sync-3.c
+gcc.dg/20000926-1.c
+gcc.dg/20011008-1.c
+gcc.dg/20011021-1.c
+gcc.dg/20020104-1.c
+gcc.dg/20020220-2.c
+gcc.dg/20030906-1.c
+gcc.dg/20030906-2.c
+gcc.dg/20031012-1.c
+gcc.dg/20040206-1.c
+gcc.dg/20040223-1.c
+gcc.dg/20080820.c
+gcc.dg/divbyzero.c
+gcc.dg/pr28322-2.c
+gcc.dg/pr64440.c
+gcc.dg/Waddress.c
+gcc.dg/Wall.c
+gcc.dg/Walways-true-1.c
+gcc.dg/Walways-true-2.c
+gcc.dg/Warray-bounds-15.c
+gcc.dg/Warray-bounds.c
+gcc.dg/Wattributes-1.c
+gcc.dg/Wbad-function-cast-1.c
+gcc.dg/Wc90-c99-compat-1.c
+gcc.dg/Wc90-c99-compat-2.c
+gcc.dg/Wc90-c99-compat-3.c
+gcc.dg/Wc90-c99-compat-8.c
+gcc.dg/Wc++-compat.c
+gcc.dg/Wc99-c11-compat-1.c
+gcc.dg/Wc99-c11-compat-2.c
+gcc.dg/Wc99-c11-compat-3.c
+gcc.dg/Wc99-c11-compat-5.c
+gcc.dg/Wc99-c11-compat-6.c
+gcc.dg/Wc99-c11-compat-7.c
+gcc.dg/Wchar-subscripts-1.c
+gcc.dg/Wconversion-3.c
+gcc.dg/Wconversion-5.c
+gcc.dg/Wconversion-complex-c99.c
+gcc.dg/Wconversion-complex-gnu.c
+gcc.dg/Wconversion-integer-no-sign.c
+gcc.dg/Wconversion-integer.c
+gcc.dg/Wconversion-pr34389.c
+gcc.dg/Wconversion-real-integer.c
+gcc.dg/Wdesignated-init.c
+gcc.dg/Wdouble-promotion.c
+gcc.dg/Wenum-compare-1.c
+gcc.dg/Werror-1.c
+gcc.dg/Werror-10.c
+gcc.dg/Werror-11.c
+gcc.dg/Werror-12.c
+gcc.dg/Werror-2.c
+gcc.dg/Werror-3.c
+gcc.dg/Werror-4.c
+gcc.dg/Werror-5.c
+gcc.dg/Werror-6.c
+gcc.dg/Werror-7.c
+gcc.dg/Werror-8.c
+gcc.dg/Werror-implicit-function-declaration.c
+gcc.dg/Wfatal-2.c
+gcc.dg/Wfatal.c
+gcc.dg/Wfloat-equal-1.c
+gcc.dg/Wframe-larger-than.c
+gcc.dg/Wimplicit-function-declaration-c89-pedantic.c
+gcc.dg/Wimplicit-function-declaration-c89.c
+gcc.dg/Wimplicit-function-declaration-c99-pedantic.c
+gcc.dg/Wimplicit-int-1.c
+gcc.dg/Wimplicit-int-2.c
+gcc.dg/Wimplicit-int-3.c
+gcc.dg/Wimplicit-int-4.c
+gcc.dg/Wlogical-op-1.c
+gcc.dg/Wno-c++-compat.c
+gcc.dg/Wold-style-definition-2.c
+gcc.dg/Woverflow-1.c
+gcc.dg/Woverflow-2.c
+gcc.dg/Woverflow-3.c
+gcc.dg/Woverlength-strings-pedantic-c89.c
+gcc.dg/Woverlength-strings-pedantic-c90.c
+gcc.dg/Woverlength-strings-pedantic-c99.c
+gcc.dg/Woverride-init-1.c
+gcc.dg/Woverride-init-2.c
+gcc.dg/Woverride-init-3.c
+gcc.dg/Woverride-init-side-effects-1.c
+gcc.dg/Woverride-init-side-effects-2.c
+gcc.dg/Wpadded.c
+gcc.dg/Wparentheses-11.c
+gcc.dg/Wparentheses-12.c
+gcc.dg/Wparentheses-13.c
+gcc.dg/Wparentheses-3.c
+gcc.dg/Wparentheses-4.c
+gcc.dg/Wparentheses-5.c
+gcc.dg/Wparentheses-6.c
+gcc.dg/Wparentheses-7.c
+gcc.dg/Wparentheses-8.c
+gcc.dg/Wparentheses-9.c
+gcc.dg/Wpointer-arith.c
+gcc.dg/Wpointer-to-int-cast-3.c
+gcc.dg/Wreturn-local-addr.c
+gcc.dg/Wreturn-type.c
+gcc.dg/Wsequence-point-pr18050.c
+gcc.dg/Wshadow-1.c
+gcc.dg/Wshadow-3.c
+gcc.dg/Wshadow-4.c
+gcc.dg/Wsign-conversion.c
+gcc.dg/Wsizeof-pointer-memaccess1.c
+gcc.dg/Wstring-literal-comparison-1.c
+gcc.dg/Wstring-literal-comparison-2.c
+gcc.dg/Wstring-literal-comparison-3.c
+gcc.dg/Wswitch-2.c
+gcc.dg/Wswitch-enum-3.c
+gcc.dg/Wswitch-enum-error.c
+gcc.dg/Wswitch-enum.c
+gcc.dg/Wswitch-error.c
+gcc.dg/Wswitch.c
+gcc.dg/Wunknownprag.c
+gcc.dg/Wunused-function.c
+gcc.dg/Wunused-label-1.c
+gcc.dg/Wunused-parm-1.c
+gcc.dg/Wunused-value-1.c
+gcc.dg/addr_builtin-1.c
+gcc.dg/alias-12.c
+gcc.dg/alias-13.c
+gcc.dg/alias-3.c
+gcc.dg/alias-4.c
+gcc.dg/alias-9.c
+gcc.dg/anon-struct-1.c
+gcc.dg/anon-struct-11.c
+gcc.dg/anon-struct-14.c
+gcc.dg/anon-struct-15.c
+gcc.dg/anon-struct-2.c
+gcc.dg/anon-struct-6.c
+gcc.dg/anon-struct-7.c
+gcc.dg/anon-struct-8.c
+gcc.dg/anon-struct-9.c
+gcc.dg/array-10.c
+gcc.dg/array-11.c
+gcc.dg/array-12.c
+gcc.dg/array-13.c
+gcc.dg/array-14.c
+gcc.dg/array-15.c
+gcc.dg/array-2.c
+gcc.dg/array-3.c
+gcc.dg/array-4.c
+gcc.dg/array-5.c
+gcc.dg/array-6.c
+gcc.dg/array-7.c
+gcc.dg/array-8.c
+gcc.dg/array-9.c
+gcc.dg/array-quals-2.c
+gcc.dg/assign-warn-1.c
+gcc.dg/assign-warn-2.c
+gcc.dg/attr-alias-4.c
+gcc.dg/attr-alias-5.c
+gcc.dg/attr-alloc_size-2.c
+gcc.dg/attr-alloc_size.c
+gcc.dg/builtin-protos-1.c
+gcc.dg/builtin-redefine.c
+gcc.dg/builtin-stringop-chk-1.c
+gcc.dg/Wcxx-compat-11.c
+gcc.dg/Wcxx-compat-22.c
+gcc.dg/Wcxx-compat-3.c
+gcc.dg/Wcxx-compat-4.c
+gcc.dg/Wcxx-compat-5.c
+gcc.dg/Wcxx-compat-6.c
+gcc.dg/Wcxx-compat-8.c
+gcc.dg/c11-atomic-1.c
+gcc.dg/c11-atomic-4.c
+gcc.dg/c11-noreturn-1.c
+gcc.dg/c90-intconst-1.c
+gcc.dg/c99-array-lval-5.c
+gcc.dg/c99-complex-1.c
+gcc.dg/c99-complex-2.c
+gcc.dg/cast-qual-2.c
+gcc.dg/cast-qual-3.c
+gcc.dg/cleanup-1.c
+gcc.dg/compare2.c
+gcc.dg/compare4.c
+gcc.dg/compare5.c
+gcc.dg/decl-nospec-1.c
+gcc.dg/decl-nospec-2.c
+gcc.dg/deprecated-2.c
+gcc.dg/deprecated-3.c
+gcc.dg/deprecated-4.c
+gcc.dg/deprecated-5.c
+gcc.dg/deprecated-6.c
+gcc.dg/fltconst-double-pedantic-1.c
+gcc.dg/fltconst-double-pedantic-2.c
+gcc.dg/fltconst-pedantic-dfp.c
+noreturn-1.c
+noreturn-6.c
+noreturn-7.c
+gcc.dg/overflow-warn-1.c
+gcc.dg/overflow-warn-2.c
+gcc.dg/overflow-warn-3.c
+gcc.dg/overflow-warn-4.c
+gcc.dg/overflow-warn-6.c
+gcc.dg/overflow-warn-8.c
+gcc.dg/pack-test-2.c
+gcc.dg/pedwarn-init.c
+gcc.dg/pointer-array-atomic.c
+gcc.dg/pointer-array-quals-1.c
+gcc.dg/pointer-array-quals-2.c
+gcc.dg/pr12625-1.c
+gcc.dg/pr32207.c
+gcc.dg/pr34088.c
+gcc.dg/pr34965.c
+gcc.dg/pr35334.c
+gcc.dg/pr35635.c
+gcc.dg/pr35742.c
+gcc.dg/pr35746.c
+gcc.dg/pr35899.c
+gcc.dg/pr36774-1.c
+gcc.dg/pr36774-2.c
+gcc.dg/pr36901-3.c
+gcc.dg/pr36901-4.c
+gcc.dg/pr50193-1.c
+gcc.dg/pr53119.c
+gcc.dg/pr59871.c
+gcc.dg/pr59940.c
+gcc.dg/pr60114.c
+gcc.dg/pr60139.c
+gcc.dg/pr60195.c
+gcc.dg/pr60257.c
+gcc.dg/pr60351.c
+gcc.dg/pr61077.c
+gcc.dg/pr62294.c
+gcc.dg/pr64637.c
+gcc.dg/pr64423.c
+gcc.dg/pr64637.c
+gcc.dg/pr64709.c
+gcc.dg/pr65345-1.c
+gcc.dg/pr65345-3.c
+gcc.dg/pr65901.c
+gcc.dg/pr66066-1.c
+gcc.dg/pr67512.c
+gcc.dg/pr67854.c
+gcc.dg/pr68412.c
+gcc.dg/pr69156.c
+gcc.dg/pr69650.c
+gcc.dg/pr70747.c
+gcc.dg/pr8927-1.c
+gcc.dg/pragma-diag-1.c
+gcc.dg/pragma-diag-2.c
+gcc.dg/pragma-diag-3.c
+gcc.dg/pragma-diag-4.c
+gcc.dg/pragma-diag-5.c
+gcc.dg/pragma-message.c
+gcc.dg/pragma-pack-4.c
+gcc.dg/pragma-re-2.c
+gcc.dg/proto-1.c
+gcc.dg/qual-component-1.c
+gcc.dg/qual-return-1.c
+gcc.dg/qual-return-2.c
+gcc.dg/qual-return-3.c
+gcc.dg/qual-return-4.c
+gcc.dg/readonly-loc.c
+gcc.dg/redecl-15.c
+gcc.dg/return-type-1.c
+gcc.dg/return-type-3.c
+gcc.dg/sequence-pt-1.c
+gcc.dg/sequence-pt-2.c
+gcc.dg/sequence-pt-3.c
+gcc.dg/sequence-pt-pr17880.c
+gcc.dg/struct-semi-1.c
+gcc.dg/struct-semi-2.c
+gcc.dg/struct-semi-3.c
+gcc.dg/struct-semi-4.c
+gcc.dg/transparent-union-1.c
+gcc.dg/transparent-union-2.c
+gcc.dg/ucnid-10.c
+gcc.dg/ucnid-13.c
+gcc.dg/uninit-11-O0.c
+gcc.dg/uninit-11.c
+gcc.dg/uninit-15.c
+gcc.dg/uninit-19.c
+gcc.dg/vla-11.c
+gcc.dg/warn-nsstring.c
+gcc.dg/wcaselabel-1.c
+gcc.dg/winline-10.c
+gcc.dg/wvla-1.c
+gcc.dg/wvla-2.c
+gcc.dg/wvla-3.c
+gcc.dg/wvla-4.c
+gcc.dg/wvla-5.c
+gcc.dg/wvla-6.c
+gcc.dg/wvla-7.c
+gcc.dg/attr-noinline.c
+gcc.dg/attr-weakref-3.c
+gcc.dg/attr-weakref-4.c
+c-c++-common/Waddress-1.c
+c-c++-common/Wcast-qual-1.c
+c-c++-common/Wconversion-real.c
+c-c++-common/Wfloat-conversion.c
+c-c++-common/Wint-to-pointer-cast-1.c
+c-c++-common/Wint-to-pointer-cast-2.c
+c-c++-common/Wparentheses-1.c
+c-c++-common/Wshift-count-negative-1.c
+c-c++-common/Wshift-count-overflow-1.c
+c-c++-common/Wshift-overflow-3.c
+c-c++-common/Wsizeof-pointer-memaccess2.c
+c-c++-common/Wtautological-compare-1.c
+c-c++-common/Wunused-local-typedefs.c
+c-c++-common/Wunused-var-1.c
+c-c++-common/Wunused-var-4.c
+c-c++-common/Wunused-var-7.c
+c-c++-common/Wunused-var-9.c
+c-c++-common/Wvarargs-2.c
+c-c++-common/Wvarargs.c
+c-c++-common/attr-used-2.c
+c-c++-common/attr-used.c
+c-c++-common/attributes-1.c
+c-c++-common/attributes-2.c
+c-c++-common/attributes-enum-1.c
+c-c++-common/attributes-enum-2.c
+c-c++-common/builtin-arith-overflow-1.c
+c-c++-common/pr43395.c
+c-c++-common/pr48418.c
+c-c++-common/pr49706.c
+c-c++-common/pr53874.c
+c-c++-common/pr56607.c
+c-c++-common/pr60439.c
+c-c++-common/pr61405.c
+c-c++-common/pr62199.c
+c-c++-common/pr65120.c
+c-c++-common/pr66208.c
+c-c++-common/pr66322.c
+c-c++-common/pr68582.c
+c-c++-common/pr69764.c
+c-c++-common/pr70264.c
+c-c++-common/raw-string-14.c
+c-c++-common/raw-string-16.c
+c-c++-common/raw-string-3.c
+c-c++-common/raw-string-4.c
+c-c++-common/raw-string-5.c
+c-c++-common/raw-string-6.c
+c-c++-common/raw-string-7.c
+c-c++-common/raw-string-8.c
+c-c++-common/raw-string-9.c
+c-c++-common/sizeof-array-argument.c
+c-c++-common/uninit-17.c
+c-c++-common/uninit-E-O0.c
+c-c++-common/uninit-E.c
+c-c++-common/uninit-F-O0.c
+c-c++-common/uninit-F.c
+c-c++-common/vector-compare-4.c
+gcc.dg/visibility-7.c
+gcc.dg/unused-5.c
+gcc.dg/c99-complit-2.c
+gcc.dg/c99-init-5.c
+gcc.dg/pr66869.c
+gcc.dg/cpp/trad/Wunused.c
+gcc.dg/cpp/trad/comment-2.c
+gcc.dg/cpp/trad/comment-3.c
+gcc.misc-tests/mg-2.c
+c-c++-common/goacc/Wparentheses-1.c
+c-c++-common/goacc/uninit-use-device-clause.c
+gcc.dg/weak/weak-17.c
+
+# ignore the test case due to different error message
+gcc.dg/weak/weak-18.c
+c-c++-common/goacc/deviceptr-1.c
+c-c++-common/goacc/pragma_context.c
+c-c++-common/int128-types-1.c
+gcc.dg/torture/pr60606-1.c
+gcc.dg/torture/pr67741.c
+gcc.dg/pr64766.c
+gcc.dg/pr64778.c
+gcc.dg/pr65050.c
+gcc.dg/pr65228.c
+gcc.dg/pr66066-1.c
+gcc.dg/pr66066-2.c
+gcc.dg/pr66066-3.c
+gcc.dg/pr67088.c
+gcc.dg/pr67580.c
+gcc.dg/pr67784-2.c
+gcc.dg/pr67432.c
+gcc.dg/pr68090.c
+gcc.dg/pr68320.c
+gcc.dg/pr68533.c
+gcc.dg/pr69483.c
+gcc.dg/pr69554-1.c
+gcc.dg/pr69627.c
+gcc.dg/pr70281.c
+gcc.dg/pr69627.c
+gcc.dg/pr69796.c
+gcc.dg/pr69819.c
+gcc.dg/pr69974.c
+gcc.dg/pr8788-1.c
+gcc.dg/redecl-1.c
+gcc.dg/redecl-10.c
+gcc.dg/redecl-12.c
+gcc.dg/redecl-13.c
+gcc.dg/redecl-2.c
+gcc.dg/redecl-3.c
+gcc.dg/redecl-4.c
+gcc.dg/redecl-5.c
+gcc.dg/redecl-7.c
+gcc.dg/redecl-8.c
+gcc.dg/reg-vol-struct-1.c
+gcc.dg/register-var-2.c
+gcc.dg/register-var-3.c
+gcc.dg/simd-1.c
+gcc.dg/simd-1b.c
+gcc.dg/simd-2.c
+gcc.dg/sizeof-1.c
+gcc.dg/sizeof-2.c
+gcc.dg/spellcheck-fields.c
+gcc.dg/struct-in-proto-1.c
+gcc.dg/struct-incompl-1.c
+gcc.dg/struct-parse-1.c
+gcc.dg/struct-parse-2.c
+gcc.dg/switch-2.c
+gcc.dg/switch-3.c
+gcc.dg/switch-5.c
+gcc.dg/switch-8.c
+gcc.dg/switch-9.c
+gcc.dg/switch-A.c
+gcc.dg/sync-fetch-bool.c
+gcc.dg/sync-fetch.c
+gcc.dg/two-types-1.c
+gcc.dg/two-types-10.c
+gcc.dg/two-types-2.c
+gcc.dg/two-types-3.c
+gcc.dg/two-types-4.c
+gcc.dg/two-types-5.c
+gcc.dg/two-types-6.c
+gcc.dg/two-types-7.c
+gcc.dg/two-types-8.c
+gcc.dg/two-types-9.c
+gcc.dg/typedef-init.c
+gcc.dg/typespec-1.c
+gcc.dg/ucnid-7.c
+gcc.dg/ucnid-8.c
+gcc.dg/uninit-15-O0.c
+gcc.dg/uninit-6-O0.c
+gcc.dg/uninit-6.c
+gcc.dg/uninit-B-O0.c
+gcc.dg/uninit-B.c
+gcc.dg/uninit-pr19430-O0.c
+gcc.dg/uninit-pr19430.c
+gcc.dg/uninit-pr20644-O0.c
+gcc.dg/uninit-pr20644.c
+gcc.dg/uninit-pr40943.c
+gcc.dg/union-3.c
+gcc.dg/union-cast-4.c
+gcc.dg/unordered-1.c
+gcc.dg/unused-1.c
+gcc.dg/unused-2.c
+gcc.dg/unused-3.c
+gcc.dg/unused-4.c
+gcc.dg/unused-6-WallWextra.c
+gcc.dg/unused-6.c
+gcc.dg/unused-7.c
+gcc.dg/unused-8a.c
+gcc.dg/unused-8b.c
+gcc.dg/unused-variable-1.c
+gcc.dg/unused-variable-2.c
+gcc.dg/unused-variable-3.c
+gcc.dg/utf-array-short-wchar.c
+gcc.dg/utf-array.c
+gcc.dg/utf-badconcat.c
+gcc.dg/utf-badconcat2.c
+gcc.dg/utf-cvt.c
+gcc.dg/utf-dflt.c
+gcc.dg/utf-dflt2.c
+gcc.dg/utf16-4.c
+gcc.dg/utf32-4.c
+gcc.dg/utf8-2.c
+gcc.dg/va-arg-1.c
+gcc.dg/va-arg-4.c
+gcc.dg/vla-19.c
+gcc.dg/vla-20.c
+gcc.dg/vla-5.c
+gcc.dg/vla-6.c
+gcc.dg/vla-8.c
+gcc.dg/vla-init-1.c
+gcc.dg/vla-init-3.c
+gcc.dg/void-cast-2.c
+gcc.dg/wtr-func-def-1.c
+gcc.dg/wtr-int-type-1.c
+gcc.dg/attr-weakref-2.c
+gcc.dg/c11-anon-struct-3.c
+gcc.dg/c90-align-1.c
+gcc.dg/c90-anon-struct-1.c
+gcc.dg/c90-array-lval-2.c
+gcc.dg/c90-array-lval-4.c
+gcc.dg/c90-arraydecl-1.c
+gcc.dg/c90-complit-1.c
+gcc.dg/c90-const-expr-9.c
+gcc.dg/c90-enum-comma-1.c
+gcc.dg/c90-flex-array-1.c
+gcc.dg/c90-fordecl-1.c
+gcc.dg/warn-addr-cmp.c
+gcc.dg/vla-18.c
+gcc.dg/pr69900.c
+gcc.dg/pr60915.c
+gcc.dg/pr36489.c
+c-c++-common/Wshift-overflow-1.c
+c-c++-common/nonnull-1.c
+c-c++-common/pr58346-1.c
+c-c++-common/pr58346-2.c
+c-c++-common/pr58346-3.c
+c-c++-common/builtin-offsetof.c
+c-c++-common/conflict-markers-1.c
+c-c++-common/conflict-markers-10.c
+c-c++-common/conflict-markers-11.c
+c-c++-common/conflict-markers-3.c
+c-c++-common/conflict-markers-4.c
+c-c++-common/conflict-markers-5.c
+c-c++-common/conflict-markers-6.c
+c-c++-common/convert-vec-1.c
+c-c++-common/fmax-errors.c
+c-c++-common/init-vec-1.c
+c-c++-common/pr20000.c
+c-c++-common/pr28656.c
+c-c++-common/pr33193.c
+c-c++-common/pr36282-1.c
+c-c++-common/pr43690.c
+c-c++-common/pr59280.c
+c-c++-common/pr60226.c
+c-c++-common/pr63764-1.c
+c-c++-common/pr67639.c
+c-c++-common/pr68107.c
+c-c++-common/pr68657-1.c
+c-c++-common/pr68833-1.c
+c-c++-common/pr69797.c
+c-c++-common/pr70144-1.c
+c-c++-common/pr70651.c
+c-c++-common/scal-to-vec1.c
+c-c++-common/vector-1.c
+c-c++-common/vector-2.c
+c-c++-common/vector-3.c
+c-c++-common/vector-compare-1.c
+c-c++-common/vector-shift.c
+c-c++-common/vector-shift1.c
+c-c++-common/vector-shift3.c
+c-c++-common/vector-subscript-1.c
+gcc.dg/asm-1.c
+gcc.dg/builtins-error.c
+gcc.dg/union-cast-2.c
+gcc.dg/union-cast-3.c
+gcc.dg/transparent-union-3.c
+gcc.dg/system-binary-constants-1.c
+gcc.dg/sync-1.c
+gcc.dg/switch-6.c
+gcc.dg/switch-7.c
+gcc.dg/stmt-expr-2.c
+gcc.dg/stmt-expr-3.c
+gcc.dg/cpp/trad/argcount.c
+gcc.dg/cpp/trad/assembler.S
+gcc.dg/cpp/trad/assert2.c
+gcc.dg/cpp/trad/comment.c
+gcc.dg/cpp/trad/defined.c
+gcc.dg/cpp/trad/directive.c
+gcc.dg/cpp/trad/funlike-3.c
+gcc.dg/cpp/trad/funlike.c
+gcc.dg/cpp/trad/literals-2.c
+gcc.dg/cpp/trad/null-drctv.c
+gcc.dg/cpp/trad/pr65238-4.c
+gcc.dg/cpp/trad/quote.c
+gcc.dg/cpp/trad/recurse-3.c
+gcc.dg/cpp/trad/redef2.c
+gcc.dg/format/array-1.c
+gcc.dg/format/asm_fprintf-1.c
+gcc.dg/format/attr-1.c
+gcc.dg/format/attr-2.c
+gcc.dg/format/attr-3.c
+gcc.dg/format/attr-4.c
+gcc.dg/format/attr-6.c
+gcc.dg/format/branch-1.c
+gcc.dg/format/builtin-1.c
+gcc.dg/format/c90-printf-1.c
+gcc.dg/format/c90-printf-2.c
+gcc.dg/format/c90-printf-3.c
+gcc.dg/format/c90-scanf-1.c
+gcc.dg/format/c90-scanf-4.c
+gcc.dg/format/c90-scanf-5.c
+gcc.dg/format/c99-printf-1.c
+gcc.dg/format/c99-printf-2.c
+gcc.dg/format/c99-printf-3.c
+gcc.dg/format/c99-scanf-1.c
+gcc.dg/format/c99-scanf-2.c
+gcc.dg/format/c99-scanf-3.c
+gcc.dg/format/c99-scanf-4.c
+gcc.dg/format/cast-1.c
+gcc.dg/format/diag-1.c
+gcc.dg/format/diag-2.c
+gcc.dg/format/errmk-1.c
+gcc.dg/format/ext-1.c
+gcc.dg/format/ext-2.c
+gcc.dg/format/ext-6.c
+gcc.dg/format/ext-7.c
+gcc.dg/format/ext-8.c
+gcc.dg/format/few-1.c
+gcc.dg/format/gcc_diag-1.c
+gcc.dg/format/gcc_gfc-2.c
+gcc.dg/format/multattr-1.c
+gcc.dg/format/multattr-2.c
+gcc.dg/format/multattr-3.c
+gcc.dg/format/nonlit-1.c
+gcc.dg/format/nonlit-2.c
+gcc.dg/format/nul-1.c
+gcc.dg/format/nul-2.c
+gcc.dg/format/null-1.c
+gcc.dg/format/plus-1.c
+gcc.dg/format/sec-1.c
+gcc.dg/format/sentinel-1.c
+gcc.dg/format/unnamed-1.c
+gcc.dg/format/va-1.c
+gcc.dg/format/xopen-1.c
+gcc.dg/format/xopen-3.c
+gcc.dg/format/z-1.c
+gcc.dg/cpp/19930510-1.c
+gcc.dg/cpp/19951025-1.c
+gcc.dg/cpp/19951227-1.c
+gcc.dg/cpp/19990413-1.c
+gcc.dg/cpp/20000129-1.c 
+gcc.dg/cpp/20000209-1.c
+gcc.dg/cpp/20000625-1.c
+gcc.dg/cpp/Wsignprom.c 
+gcc.dg/cpp/Wtrigraphs-2.c
+gcc.dg/cpp/Wtrigraphs.c
+gcc.dg/cpp/Wunknown-pragmas-1.c
+gcc.dg/cpp/Wunused.c
+gcc.dg/cpp/Wvariadic-1p.c
+gcc.dg/cpp/_Pragma1.c
+gcc.dg/cpp/_Pragma6.c
+gcc.dg/cpp/arith-1.c
+gcc.dg/cpp/arith-3.c
+gcc.dg/cpp/assembler.S
+gcc.dg/cpp/assert1.c
+gcc.dg/cpp/assert2.c
+gcc.dg/cpp/assert3.c
+gcc.dg/cpp/assert4.c
+gcc.dg/cpp/avoidpaste1.c
+gcc.dg/cpp/avoidpaste2.c
+gcc.dg/cpp/backslash.c
+gcc.dg/cpp/backslash2.c
+gcc.dg/cpp/charconst-4.c
+gcc.dg/cpp/charconst.c
+gcc.dg/cpp/cmdlne-C3.c
+gcc.dg/cpp/cmdlne-M.c
+gcc.dg/cpp/cmdlne-dI-C.c
+gcc.dg/cpp/cmdlne-dM-M.c
+gcc.dg/cpp/cmdlne-dM-dD.c
+gcc.dg/cpp/cmdlne-dU-1.c
+gcc.dg/cpp/cmdlne-dU-10.c
+gcc.dg/cpp/cmdlne-dU-12.c
+gcc.dg/cpp/cmdlne-dU-13.c
+gcc.dg/cpp/cmdlne-dU-14.c
+gcc.dg/cpp/cmdlne-dU-16.c
+gcc.dg/cpp/cmdlne-dU-17.c
+gcc.dg/cpp/cmdlne-dU-18.c
+gcc.dg/cpp/cmdlne-dU-19.c
+gcc.dg/cpp/cmdlne-dU-2.c
+gcc.dg/cpp/cmdlne-dU-21.c
+gcc.dg/cpp/cmdlne-dU-22.c
+gcc.dg/cpp/cmdlne-dU-3.c
+gcc.dg/cpp/cmdlne-dU-4.c
+gcc.dg/cpp/cmdlne-dU-5.c
+gcc.dg/cpp/cmdlne-dU-6.c
+gcc.dg/cpp/cmdlne-dU-7.c
+gcc.dg/cpp/cmdlne-dU-8.c
+gcc.dg/cpp/cmdlne-dU-9.c
+gcc.dg/cpp/cxxcom2.c
+gcc.dg/cpp/defined.c
+gcc.dg/cpp/digraph2.c
+gcc.dg/cpp/dir-only-2.c
+gcc.dg/cpp/dir-only-6.c
+gcc.dg/cpp/direct2.c
+gcc.dg/cpp/direct2s.c
+gcc.dg/cpp/directiv.c
+gcc.dg/cpp/empty-include.c
+gcc.dg/cpp/endif-pedantic2.c
+gcc.dg/cpp/error-1.c
+gcc.dg/cpp/escape-1.c
+gcc.dg/cpp/escape.c
+gcc.dg/cpp/expr-overflow-1.c
+gcc.dg/cpp/extratokens.c
+gcc.dg/cpp/if-1.c
+gcc.dg/cpp/if-2.c
+gcc.dg/cpp/if-4.c
+gcc.dg/cpp/if-5.c
+gcc.dg/cpp/if-cexp.c
+gcc.dg/cpp/if-mop.c
+gcc.dg/cpp/if-mpar.c
+gcc.dg/cpp/if-oppr2.c
+gcc.dg/cpp/if-paren.c
+gcc.dg/cpp/if-shift.c
+gcc.dg/cpp/include2.c
+gcc.dg/cpp/include2a.c
+gcc.dg/cpp/include6.c
+gcc.dg/cpp/lexident.c
+gcc.dg/cpp/lexnum.c
+gcc.dg/cpp/lexstrng.c
+gcc.dg/cpp/line6.c
+gcc.dg/cpp/line7.c
+gcc.dg/cpp/maccom3.c
+gcc.dg/cpp/macro-exp-tracking-1.c
+gcc.dg/cpp/macro-exp-tracking-2.c
+gcc.dg/cpp/macro-exp-tracking-3.c
+gcc.dg/cpp/macro-exp-tracking-4.c
+gcc.dg/cpp/macro-exp-tracking-5.c
+gcc.dg/cpp/macspace1.c
+gcc.dg/cpp/macspace2.c
+gcc.dg/cpp/macsyntx.c
+gcc.dg/cpp/mi1.c
+gcc.dg/cpp/mi6.c
+gcc.dg/cpp/mi8.c
+gcc.dg/cpp/missing-header-1.c
+gcc.dg/cpp/missing-header-MD.c
+gcc.dg/cpp/missing-header-MMD.c
+gcc.dg/cpp/missing-sysheader-MD.c
+gcc.dg/cpp/missing-sysheader-MMD.c
+gcc.dg/cpp/multiline-2.c
+gcc.dg/cpp/multiline.c
+gcc.dg/cpp/paste1.c
+gcc.dg/cpp/paste11.c
+gcc.dg/cpp/paste12-2.c
+gcc.dg/cpp/paste12.c
+gcc.dg/cpp/paste13.c
+gcc.dg/cpp/paste14-2.c
+gcc.dg/cpp/paste14.c
+gcc.dg/cpp/paste15.c
+gcc.dg/cpp/paste16.c
+gcc.dg/cpp/paste18.c
+gcc.dg/cpp/paste4.c
+gcc.dg/cpp/paste5.c
+gcc.dg/cpp/paste6.c
+gcc.dg/cpp/paste8-2.c
+gcc.dg/cpp/paste8.c
+gcc.dg/cpp/poison.c
+gcc.dg/cpp/pr20356.c
+gcc.dg/cpp/pr22168-2.c
+gcc.dg/cpp/pr22168.c
+gcc.dg/cpp/pr23827_c90.c
+gcc.dg/cpp/pr27777.c
+gcc.dg/cpp/pr28165.c
+gcc.dg/cpp/pr28709.c
+gcc.dg/cpp/pr29612-1.c
+gcc.dg/cpp/pr30786.c
+gcc.dg/cpp/pr33466.c
+gcc.dg/cpp/pr34602.c
+gcc.dg/cpp/pr34692.c
+gcc.dg/cpp/pr35322.c
+gcc.dg/cpp/pr60570.c
+gcc.dg/cpp/pr61854-5.c
+gcc.dg/cpp/pr61854-7.c
+gcc.dg/cpp/pr65238-2.c
+gcc.dg/cpp/pr66415-1.c
+gcc.dg/cpp/pr66415-2.c
+gcc.dg/cpp/pr69985.c
+gcc.dg/cpp/pr7263-3.c
+gcc.dg/cpp/pragma-1.c
+gcc.dg/cpp/pragma-2.c
+gcc.dg/cpp/pragma-diagnostic-1.c
+gcc.dg/cpp/pragma-diagnostic-2.c
+gcc.dg/cpp/pragma-float-const-decimal64-1.c
+gcc.dg/cpp/pragma-pop_macro-1.c
+gcc.dg/cpp/redef2.c
+gcc.dg/cpp/redef3.c
+gcc.dg/cpp/redef4.c
+gcc.dg/cpp/separate-1.c
+gcc.dg/cpp/skipping2.c
+gcc.dg/cpp/strify1.c
+gcc.dg/cpp/strify2.c
+gcc.dg/cpp/strify5.c
+gcc.dg/cpp/syshdr4.c
+gcc.dg/cpp/syshdr5.c
+gcc.dg/cpp/tr-warn1.c
+gcc.dg/cpp/tr-warn3.c
+gcc.dg/cpp/trigraphs.c
+gcc.dg/cpp/ucnid-13.c
+gcc.dg/cpp/ucnid-15.c
+gcc.dg/cpp/ucnid-6.c
+gcc.dg/cpp/ucnid-7.c
+gcc.dg/cpp/ucs.c
+gcc.dg/cpp/unc1.c
+gcc.dg/cpp/unc2.c
+gcc.dg/cpp/unc3.c
+gcc.dg/cpp/unc4.c
+gcc.dg/cpp/undef2.c
+gcc.dg/cpp/vararg3.c
+gcc.dg/cpp/vararg4.c
+gcc.dg/cpp/very-long-comment.c 
+gcc.dg/cpp/warn-comments-2.c
+gcc.dg/cpp/warn-comments-3.c
+gcc.dg/cpp/warn-comments.c
+gcc.dg/cpp/warn-deprecated-2.c
+gcc.dg/cpp/warn-deprecated.c
+gcc.dg/cpp/warn-multichar-2.c
+gcc.dg/cpp/warn-multichar.c
+gcc.dg/cpp/warn-redefined-2.c
+gcc.dg/cpp/warn-redefined.c
+gcc.dg/cpp/warn-traditional-2.c
+gcc.dg/cpp/warn-traditional.c
+gcc.dg/cpp/warn-trigraphs-1.c
+gcc.dg/cpp/warn-trigraphs-2.c
+gcc.dg/cpp/warn-trigraphs-3.c
+gcc.dg/cpp/warn-trigraphs-4.c
+gcc.dg/cpp/warn-undef-2.c
+gcc.dg/cpp/warn-undef.c
+gcc.dg/cpp/warn-unused-macros-2.c
+gcc.dg/cpp/warn-unused-macros.c
+gcc.dg/cpp/warn-variadic-2.c
+gcc.dg/cpp/warn-variadic.c
+gcc.dg/cpp/widestr1.c
+c-c++-common/cpp/diagnostic-pragma-1.c
+c-c++-common/cpp/openacc-define-3.c
+c-c++-common/cpp/openmp-define-3.c
+c-c++-common/cpp/pr57580.c
+c-c++-common/cpp/pr58844-1.c
+c-c++-common/cpp/pr58844-2.c
+c-c++-common/cpp/pr60400.c
+c-c++-common/cpp/pr63831-1.c
+c-c++-common/cpp/pr63831-2.c
+c-c++-common/cpp/pr65238-1.c
+c-c++-common/cpp/warning-directive-1.c
+c-c++-common/cpp/warning-directive-2.c
+c-c++-common/cpp/warning-directive-3.c
+c-c++-common/cpp/warning-directive-4.c
+c-c++-common/cpp/warning-zero-in-literals-1.c
+gcc.dg/large-size-array-5.c
+gcc.dg/large-size-array.c
+gcc.dg/pr42611.c
+gcc.dg/attr-alloc_align-2.c
+
+# gcc expect link_error function call could optimize away,
+# but llvm can't do it now.
+gcc.dg/torture/builtin-cproj-1.c
+gcc.dg/torture/builtin-cproj-2.c
+gcc.dg/torture/builtin-math-1.c
+gcc.dg/torture/builtin-math-7.c
+gcc.dg/torture/builtin-math-8.c
+gcc.dg/torture/builtin-sqrt-cmp-1.c
+gcc.dg/torture/builtin-symmetric-1.c
+gcc.dg/torture/pr27302-2.c
+gcc.dg/ipa/ipa-pta-13.c
+
+# gcc can optimize out link_error in -O0
+# but llvm won't
+gcc.dg/torture/pr26898-1.c
+gcc.dg/torture/builtin-sin-mpfr-1.c
+gcc.dg/torture/builtin-isinf_sign-1.c
+gcc.dg/torture/pr27302.c
+gcc.c-torture/execute/medce-1.c
+gcc.dg/pr15785-1.c
+gcc.dg/pr30951.c
+gcc.c-torture/execute/ieee/fp-cmp-7.c
+gcc.dg/tree-ssa/ssa-ccp-33.c
+
+# gcc expect builtin math function could to constant folding
+# but llvm can't do it now.
+gcc.dg/torture/builtin-explog-1.c
+gcc.dg/torture/builtin-power-1.c
+gcc.dg/builtins-1.c
+gcc.dg/builtins-12.c
+gcc.dg/builtins-31.c
+gcc.dg/builtins-32.c
+gcc.dg/builtins-41.c
+
+# llvm/clang would fail due to have different builtin function arugment passing rule
+gcc.dg/torture/builtin-logb-1.c
+gcc.dg/builtin-assume-aligned-2.c
+gcc.dg/builtin-constant_p-1.c
+gcc.dg/builtins-68.c
+gcc.dg/nonnull-3.c
+
+# ignore the case that llvm/clang not support some builtin argument type
+gcc.dg/torture/builtin-nonneg-1.c
+gcc.dg/torture/pr54261-1.c
+
+# gcc expect should warning but clang show error directly
+gcc.dg/torture/pr29119.c
+gcc.dg/20041213-1.c
+gcc.dg/Wunsuffixed-float-constants-1.c
+gcc.dg/Wunused-local-typedefs.c
+gcc.dg/Wunused-var-1.c
+gcc.dg/Wunused-var-3.c
+gcc.dg/builtin-prefetch-1.c
+gcc.dg/c11-static-assert-5.c
+gcc.dg/c11-static-assert-6.c
+gcc.dg/c99-typedef-1.c
+gcc.dg/c99-typespec-1.c
+
+# skip the testcase will need scan gcc dump file
+gcc.dg/torture/pr42898-2.c
+gcc.dg/torture/pr42898.c
+gcc.dg/pr30957-1.c
+gcc.dg/autopar/pr49960.c
+
+# It seems that clang will try to find the builtin function prototype
+# not the extern declaration one.
+gcc.dg/torture/pr55890-2.c
+gcc.dg/torture/pr55890-3.c
+
+# It seems that testcase fail when compile with -fstrict-aliasing
+# is pretty reasonable. Please correct the message if you have
+# other thought.
+gcc.dg/torture/pr69776-2.c
+
+# ignore the testcase need -fkeep-static-functions option,
+# but llvm don't have. Please correct the message if you have
+# other thought.
+gcc.dg/PR68002.c
+
+# GCC expect link_failure_* could optimize out,
+# But LLVM can't do it now.
+gcc.dg/torture/builtin-wctype-1.c
+
+# fatal error: error in backend:
+# Error while trying to spill X5_32 from class GPR: 
+# Cannot scavenge register without an emergency spill slot!
+#
+# It will need a scavenge register if the offset is too far(exceed signed 12-bit)
+# from base register.
+# If there is no free register to use, LLVM will spill a register to stack.
+# However, if the stack location for spilling also exceed 12-bit which mean 
+# the spilling also need a scavenge register !!
+# It become a recursive requirement for scavenge register and would crash in the end.
+#
+# It seems like a LLVM limitation.
+# if we want stack location for scavenge register spilling not exceed 12-bits signed,
+# it would need to lot of work for frame code generation.
+# ARM/MIPS would not trigger it because they have wider immediate limitation 
+# for load/store offset.
+# gcc.c-torture/compile/pr37669-2.c
+
+
+# Skip the testcases need scan gcc dump files
+gcc.dg/tree-ssa/asm-2.c
+gcc.dg/tree-ssa/asm-3.c
+gcc.dg/tree-ssa/forwprop-19.c
+gcc.dg/tree-ssa/forwprop-20.c
+gcc.dg/tree-ssa/forwprop-21.c
+gcc.dg/tree-ssa/forwprop-23.c
+gcc.dg/tree-ssa/inline-3.c
+gcc.dg/tree-ssa/loop-1.c
+gcc.dg/tree-ssa/ssa-ccp-20.c
+gcc.dg/tree-ssa/ssa-dse-10.c
+gcc.dg/tree-ssa/ssa-sccvn-4.c
+gcc.dg/tree-ssa/vector-4.c
+gcc.dg/tree-ssa/vrp12.c
+gcc.dg/tree-ssa/vrp13.c
+gcc.dg/tree-ssa/vrp45.c
+gcc.dg/tree-ssa/vrp51.c
+gcc.dg/tree-ssa/vrp63.c
+gcc.dg/tree-ssa/vrp65.c
+gcc.dg/tree-ssa/vrp68.c
+gcc.dg/tree-ssa/vrp69.c
+gcc.dg/tree-ssa/vrp76.c
+gcc.dg/tree-ssa/vrp78.c
+gcc.dg/tree-ssa/vrp80.c
+gcc.dg/tree-ssa/vrp85.c
+gcc.dg/tree-ssa/vrp90.c
+gcc.dg/tree-ssa/alias-23.c
+gcc.dg/builtin-assume-aligned-1.c
+gcc.dg/fold-perm.c
+gcc.dg/strlenopt-19.c
+gcc.dg/strlenopt-20.c
+gcc.dg/var-expand1.c
+
+# Skip the testcases need scan gcc's MD pattern
+gcc.dg/old-style-asm-1.c
+
+#Not support thread-local storage
+gcc.dg/c11-thread-local-1.c
+gcc.dg/c11-thread-local-2.c
+gcc.dg/c90-thread-local-1.c
+gcc.dg/c99-thread-local-1.c
+gcc.dg/pr63342.c
+
+#undefine gcc's marco, __GCC_IEC_559
+gcc.dg/iec-559-macros-1.c
+gcc.dg/iec-559-macros-2.c
+gcc.dg/iec-559-macros-3.c
+gcc.dg/iec-559-macros-4.c
+gcc.dg/iec-559-macros-5.c
+gcc.dg/iec-559-macros-6.c
+gcc.dg/iec-559-macros-7.c
+gcc.dg/iec-559-macros-8.c
+
+# error the clang frontend command failed
+# arm clang will fail too.
+gcc.dg/c99-fordecl-2.c
+gcc.dg/c99-fordecl-3.c
+gcc.dg/large-size-array-2.c
+gcc.dg/large-size-array-4.c
+gcc.dg/pr63594-2.c
+gcc.dg/20020425-1.c
+gcc.dg/vla-15.c
+
+#GNU decimal type extension not supported
+gcc.dg/nodfp-1.c
+
+#skip the testcase scan-assembler .gnu.lto.*
+gcc.dg/pr61868.c
+
+#not support subnormal, reference by 'float.h',
+#this header file undefine FLT_HAS_SUBNORM,
+#DBL_HAS_SUBNORM, LDBL_HAS_SUBNORM.
+gcc.dg/c11-float-1.c
+gcc.dg/c90-float-1.c
+
+#Undefine __NO_MATH_ERRNO__ marco name, when using
+#-fno-math-errno' option
+gcc.dg/no-math-errno-1.c
+gcc.dg/no-math-errno-2.c
+gcc.dg/no-math-errno-4.c
+
+#unknown type name 'int_least8_t', int_least16_t.
+#LLVM ARM has same result
+gcc.dg/c11-stdatomic-1.c
+gcc.dg/pr61756.c
+
+#unsupported option '--dump=a'
+gcc.dg/opts-4.c
+
+#the clang compiler does not support '-fno-unit-at-a-time'
+gcc.dg/pr33645-1.c
+
+#unknown warning group '-Wmaybe-uninitialized'
+gcc.dg/pr69543.c
+
+#unknown warning group '-Wnoexcept'
+gcc.dg/pragma-diag-6.c
+
+#not support -Wmissing-declarations option
+c-c++-common/Wmisleading-indentation-3.c
+c-c++-common/Wmisleading-indentation.c
+
+#Using -Wuninitialized, clang report warning, but gcc not.
+c-c++-common/uninit-D-O0.c
+c-c++-common/uninit-D.c
+
+#unknown warning option: -Wlarger-than=65536
+c-c++-common/pr68657-3.c
+
+#unknown warning option:-Wunknown-pragmas
+c-c++-common/pr69543-1.c
+c-c++-common/pr69543-2.c
+c-c++-common/pr69543-3.c
+c-c++-common/pr69543-4.c
+
+#Using -fdump-ada-spec to scan dump file,
+#but clang has not this option.
+c-c++-common/dump-ada-spec-1.c
+
+#clang can parser -finstrument-functions-exclude-function-list=xxx option,
+#but not work, this option maybe we can implement.
+gcc.dg/instrument-2.c
+gcc.dg/instrument-3.c
+
+#clang can parser -fplan9-extensions option, but not work.
+##LLVM ARM will have same result
+gcc.dg/anon-struct-12.c
+gcc.dg/anon-struct-13.c
+
+#GCC and clang '-ffast-math' is not the same.
+gcc.dg/builtins-10.c
+gcc.dg/builtins-11.c
+gcc.dg/builtins-18.c
+gcc.dg/builtins-19.c
+gcc.dg/builtins-20.c
+gcc.dg/builtins-26.c
+gcc.dg/builtins-27.c
+gcc.dg/builtins-52.c
+gcc.dg/builtins-54.c
+
+#builtin functions must be directly called
+#LLVM ARM will have same result
+c-c++-common/pr70144-2.c
+
+#Not allow increment/decrement value of type by vector_size.
+c-c++-common/pr59032.c
+
+#has not -ftree-ccp option, this option
+#using GCC optimize CCP on tree level.
+c-c++-common/pr52177.c
+
+#has not '-fallow-parameterless-variadic-functions' option
+gcc.dg/va-arg-5.c
+
+#Using '-fno-finite-math-only' option, optimzie in -O0,
+# but llvm won't
+gcc.dg/unordered-2.c
+gcc.dg/unordered-3.c
+
+#Could not read profile default.profdata,
+#GCC profile naming is XXX.gcda.
+gcc.dg/pr32773.c
+gcc.dg/pr40209.c
+gcc.dg/pr51957-1.c
+
+#unsupport of scalar_storage_order attribute
+gcc.dg/sso-2.c
+gcc.dg/sso-3.c
+gcc.dg/sso-5.c
+
+#clang show warning message, but GCC not.
+#The message is "too many arguments in call to 'xxx'".
+gcc.dg/pr44539.c
+gcc.dg/pr41241.c
+
+# llvm can optimize out in -O0, but GCC won't
+gcc.dg/pr24561.c
+gcc.dg/pr25795-1.c
+gcc.dg/pr27095.c
+
+#test gcc rtl-optimization for CSE of non-volatile inline asm
+gcc.dg/pr63637-5.c
+gcc.dg/pr63637-6.c
+
+#Unsupported need pthread_h, the GCC unsupport too.
+gcc.dg/split-2.c
+
+#undefine __SIG_ATOMIC_XXX__ marco,
+#ARM also undefine it.
+gcc.dg/c99-stdint-1.c
+gcc.dg/c99-stdint-5.c
+gcc.dg/c99-stdint-6.c
+gcc.dg/c99-stdint-7.c
+gcc.dg/c99-stdint-8.c
+
+#Unsupport '-fstrict-aliasing' option
+gcc.dg/localalias-2.c
+gcc.dg/localalias.c
+
+#It seems that LLVM not support __attribute__((no_reorder.) attribute
+gcc.dg/noreorder.c
+gcc.dg/noreorder2.c
+gcc.dg/noreorder4.c
+
+#Clang check zero vector size, but GCC not.
+gcc.dg/pr69973.c
+
+#clang can parser -fwhole-program option, but not work.
+gcc.dg/attr-externally-visible-1.c
+gcc.dg/attr-externally-visible-2.c
+
+#clang can parser -fstack-usage option, but not work.
+stack-usage-1.c
+
+#Test that nan functions are not built-in in C90 mode.
+gcc.dg/builtins-35.c
+
+#clang can parser -fleading-underscore option, but not work.
+gcc.dg/unwind-1.c
+
+#Test qualifier discard of typeof for atomic types.
+#LLVM ARM has same result.
+gcc.dg/typeof-2.c
+
+#clang show error message, but GCC not.
+#The message is "use of undeclared identifier".
+gcc.dg/ucnid-5.c
+
+#syntax error by static_assert, llvm report error,
+#but GCC can parser.
+gcc.dg/pr61817-1.c
+gcc.dg/pr61817-2.c
+gcc.dg/c11-static-assert-1.c
+
+#unspport -fheinous-gnu-extensions for gnu extension.
+gcc.dg/asm-a.c
+
+# skip for riscv64 which will show
+# array is too large (4611686018427387648 elements) frond end error message
+gcc.c-torture/execute/991014-1.c
+
+# skip for riscv64
+# which will show Unsupported XMULO
+# mips64 have the same result
+c-c++-common/torture/builtin-arith-overflow-17.c
+
+# skip for riscv64
+# which will show undefined reference to `__muloti4'
+c-c++-common/torture/builtin-arith-overflow-6.c
+
+# It seems that clang not support convert TImode integer to float
+# E.g.
+#     static volatile float fv1;
+#     fv1 = ((UTItype)~(UTItype)0);
+#     if (fv1 != ((UTItype)~(UTItype)0)) abort ();
+#
+# clang will show fv1 is undef and in the end optimize to call abort();
+# I can't find relative conversion rule in C99 standard,
+# so it probably undefined behavior.
+# Correct the message if you find relative rule or you have other thought.
+gcc.dg/torture/fp-int-convert-timode.c
+
+# clang not support __attribute__((mode(QI)))
+gcc.dg/20011214-1.c
+
+# clang not support struct Foo { int; };
+# which will show:  declaration does not declare anything
+gcc.dg/anon-struct-5.c
+
+# clang will show: weakref declaration of 'Wf1c' must also have an alias attribute
+gcc.dg/attr-weakref-1.c
+
+# It seems that clang have different behavior of
+# __builtin_object_size and __builtin_offsetof
+gcc.dg/builtin-object-size-1.c
+gcc.dg/builtin-object-size-2.c
+gcc.dg/builtin-object-size-3.c
+gcc.dg/builtin-object-size-4.c
+gcc.dg/builtin-object-size-6.c
+gcc.dg/builtin-object-size-7.c
+gcc.dg/builtin-object-size-8.c
+gcc.dg/builtin-object-size-11.c
+gcc.dg/builtin-object-size-13.c
+gcc.dg/builtin-object-size-15.c
+
+# clang fail due to not support gnu_inline.
+# extern inline __attribute__((gnu_inline)) foo() {};
+# This definition of foo is used only for inlining.
+# It is not compiled as a standalone function.
+# So gcc will generate function call to mysnprintf but clang won't.
+gcc.dg/builtins-85.c
+
+# clang preprocessor have different behavior
+gcc.dg/c90-hexfloat-2.c
+
+# clang not support gnu "cleanup" attribute
+gcc.dg/cleanup-12.c
+gcc.dg/cleanup-13.c
+gcc.dg/cleanup-5.c
+
+# clang have different inline behavior
+gcc.dg/varpool-1.c
+
+# clang not support -fsso-struct=
+gcc.dg/sso-6.c
+gcc.dg/sso-7.c
+gcc.dg/sso-8.c
+
+# clang will let b array in function f become global variable
+# It seems like a clang bug!
+gcc.dg/pr38615.c
+
+# clang compile with -fstack-protector will can't find __stack_chk_guard
+# Not sure should llvm obtain it or library.
+# check it later.
+gcc.dg/pr38616.c
+gcc.dg/pr38902.c
+gcc.dg/pr54921.c
+
+# It seems like a clang preprocessor bugs
+# that __BASE_FILE__ assign to pre_inc_base_file
+# pre_inc_base_file didn't get file name !!
+gcc.dg/pr33919.c
+
+# It seems reasonable to me that clang/llvm optimize to call memcpy
+# Not sure why gcc avoid this. Skip the testcase.
+# Correct the message if you figure out why gcc doing this.
+gcc.dg/string-opt-1.c
+
+# LLVM porting not implement sibling call yet.
+# Run the test cases when we done the relative implementation.
+gcc.dg/sibcall-10.c
+gcc.dg/sibcall-3.c
+gcc.dg/sibcall-4.c
+gcc.dg/sibcall-9.c
+
+# Clang not support
+# __attribute__((scalar_storage_order("little-endian")))
+# __attribute__((scalar_storage_order("big-endian")))
+gcc.dg/sso/p1.c
+gcc.dg/sso/p2.c
+gcc.dg/sso/p3.c
+gcc.dg/sso/p4.c
+gcc.dg/sso/p5.c
+gcc.dg/sso/p6.c
+gcc.dg/sso/p7.c
+gcc.dg/sso/p8.c
+gcc.dg/sso/p9.c
+gcc.dg/sso/p13.c
+gcc.dg/sso/q1.c
+gcc.dg/sso/q2.c
+gcc.dg/sso/q3.c
+gcc.dg/sso/q4.c
+gcc.dg/sso/q5.c
+gcc.dg/sso/q6.c
+gcc.dg/sso/q7.c
+gcc.dg/sso/q8.c
+gcc.dg/sso/q9.c
+gcc.dg/sso/q13.c
+gcc.dg/sso/r3.c
+gcc.dg/sso/r5.c
+gcc.dg/sso/r6.c
+gcc.dg/sso/r7.c
+gcc.dg/sso/r8.c
+gcc.dg/sso/s3.c
+gcc.dg/sso/s5.c
+gcc.dg/sso/s6.c
+gcc.dg/sso/s7.c
+gcc.dg/sso/s8.c
+gcc.dg/sso/t1.c
+gcc.dg/sso/t2.c
+gcc.dg/sso/t3.c
+gcc.dg/sso/t4.c
+gcc.dg/sso/t5.c
+gcc.dg/sso/t6.c
+gcc.dg/sso/t7.c
+gcc.dg/sso/t8.c
+gcc.dg/sso/t9.c
+gcc.dg/sso/t13.c
+gcc.dg/sso/u5.c
+gcc.dg/sso/u6.c
+
+# clang not support -dumpbase option
+gcc.c-torture/unsorted/dump-noaddr.c
+
+# clang not support __attribute__ ((noinline, section ("test_section")))
+gcc.dg/ipa/ipa-clone-1.c
+
+# It seems that clang not support input file overwrite
+# and the input file name is generate by expect script
+# find another way to filter it
+# output.exp
+
+# Clang show error message:
+# weak declaration cannot have internal linkage
+# It seems that clang not allow internal symbol as weak symbol.
+gcc.dg/weak/weak-14.c
+
+# LLVM RISCV will generate indirect call in this case
+# so the scan-assmebler can't not find 6 baz3
+gcc.dg/weak/typeof-2.c
+
+# ffoo1c didn't take as weak symbol ?
+# Is it a clang bug ?
+gcc.dg/weak/weak-2.c
+gcc.dg/weak/weak-3.c
+gcc.dg/weak/weak-4.c
+gcc.dg/weak/weak-5.c
+
+# It seems that clang not support some cilkplus semantic
+gcc.dg/graphite/id-28.c
+
+# clang have different pch(precompile header) usage
+gcc.dg/pch/common-1.c
+gcc.dg/pch/counter-1.c
+gcc.dg/pch/counter-2.c
+gcc.dg/pch/counter-3.c
+gcc.dg/pch/cpp-1.c
+gcc.dg/pch/cpp-2.c
+gcc.dg/pch/cpp-3.c
+gcc.dg/pch/decl-1.c
+gcc.dg/pch/decl-2.c
+gcc.dg/pch/decl-3.c
+gcc.dg/pch/decl-4.c
+gcc.dg/pch/decl-5.c
+gcc.dg/pch/empty.c
+gcc.dg/pch/except-1.c
+gcc.dg/pch/global-1.c
+gcc.dg/pch/ident-1.c
+gcc.dg/pch/import-1.c
+gcc.dg/pch/import-2.c
+gcc.dg/pch/inline-1.c
+gcc.dg/pch/inline-2.c
+gcc.dg/pch/inline-3.c
+gcc.dg/pch/inline-4.c
+gcc.dg/pch/macro-1.c
+gcc.dg/pch/macro-2.c
+gcc.dg/pch/macro-3.c
+gcc.dg/pch/macro-4.c
+gcc.dg/pch/save-temps-1.c
+gcc.dg/pch/static-1.c
+gcc.dg/pch/static-2.c
+gcc.dg/pch/static-3.c
+gcc.dg/pch/struct-1.c
+gcc.dg/pch/system-1.c
+gcc.dg/pch/valid-1.c
+gcc.dg/pch/valid-1b.c
+gcc.dg/pch/valid-2.c
+gcc.dg/pch/valid-4.c
+gcc.dg/pch/valid-5.c
+gcc.dg/pch/valid-6.c
+gcc.dg/pch/warn-1.c
+gcc.dg/pch/largefile.c
+largefile.c
+./inline-2.h
+
+# clang show error message:
+# cannot convert between vector values of different size
+gcc.dg/pr69896.c
+gcc.dg/pr70326.c
+
+# Not a code generation error, skip it
+gcc.dg/visibility-d.c
+
+# clang/llvm debug message print by -gdwarf-2 is little different with gcc.
+# So scan-assembler may fail.
+c-c++-common/dwarf2/pr43190.c
+c-c++-common/dwarf2/vla1.c
+gcc.dg/debug/dwarf2/aranges-fnsec-1.c
+gcc.dg/debug/dwarf2/atomic.c
+gcc.dg/debug/dwarf2/dups-types.c
+gcc.dg/debug/dwarf2/dwarf-char1.c
+gcc.dg/debug/dwarf2/dwarf-char2.c
+gcc.dg/debug/dwarf2/dwarf-char3.c
+gcc.dg/debug/dwarf2/dwarf-die5.c
+gcc.dg/debug/dwarf2/dwarf-float.c
+gcc.dg/debug/dwarf2/dwarf-float.c
+gcc.dg/debug/dwarf2/dwarf-merge.c
+gcc.dg/debug/dwarf2/dwarf2-macro.c
+gcc.dg/debug/dwarf2/dwarf2-macro2.c
+gcc.dg/debug/dwarf2/fesd-any.c
+gcc.dg/debug/dwarf2/fesd-baseonly.c
+gcc.dg/debug/dwarf2/fesd-none.c
+gcc.dg/debug/dwarf2/fesd-reduced.c
+gcc.dg/debug/dwarf2/fesd-sys.c
+gcc.dg/debug/dwarf2/global-used-types.c
+gcc.dg/debug/dwarf2/inline1.c
+gcc.dg/debug/dwarf2/inline2.c
+gcc.dg/debug/dwarf2/inline3.c
+gcc.dg/debug/dwarf2/lang-c11-d4-strict.c
+gcc.dg/debug/dwarf2/lang-c11.c
+gcc.dg/debug/dwarf2/lang-c89.c
+gcc.dg/debug/dwarf2/lang-c99.c
+gcc.dg/debug/dwarf2/noreturn-function-keyword.c
+gcc.dg/debug/dwarf2/pr31230.c
+gcc.dg/debug/dwarf2/pr41445-1.c
+gcc.dg/debug/dwarf2/pr41445-2.c
+gcc.dg/debug/dwarf2/pr41445-3.c
+gcc.dg/debug/dwarf2/pr41445-4.c
+gcc.dg/debug/dwarf2/pr41445-5.c
+gcc.dg/debug/dwarf2/pr41445-6.c
+gcc.dg/debug/dwarf2/pr47939-1.c
+gcc.dg/debug/dwarf2/pr47939-2.c
+gcc.dg/debug/dwarf2/pr47939-3.c
+gcc.dg/debug/dwarf2/pr47939-4.c
+gcc.dg/debug/dwarf2/pr49871.c
+gcc.dg/debug/dwarf2/pr51410.c
+gcc.dg/debug/dwarf2/pr53948.c
+gcc.dg/debug/dwarf2/prod-options.c
+gcc.dg/debug/dwarf2/sso.c
+gcc.dg/debug/dwarf2/stacked-qualified-types-1.c
+gcc.dg/debug/dwarf2/stacked-qualified-types-2.c
+gcc.dg/debug/dwarf2/stacked-qualified-types-3.c
+gcc.dg/debug/dwarf2/struct-loc1.c
+gcc.dg/debug/dwarf2/var1.c
+gcc.dg/debug/dwarf2/var2.c
+
+# It seems like a llvm bug!
+# check it later
+gcc.dg/graphite/block-6.c
+
+# LLVM show error message:
+# fatal error: error in backend:
+# Error while trying to spill X5_32 from class GPR: Cannot scavenge register
+# without an emergency spill slot!
+#
+# It's a big stack access test case.
+# For the offset exceed instruction's load/store/add offset.
+# We need scavenge register for generate lui/addi pair.
+# LLVM have strategy to spill a register to get free scavenge register.
+# However, in this case the spill register instruction's offset exceed
+# instruction limitation too, so it need another scavenge register 
+# which make the stategy fail.
+# Other CPU could avoid fail in this case due to they have bigger offset limitation.
+# Please correct the message if you have other thougth or other way to fix the issue.
+gcc.c-torture/compile/pr37669-2.c
+
+# skip the testcase scan assembly code fail due to use
+# llvm integrate assembler which will show assembly format a little different.
+gcc.dg/inline-3.c
+gcc.dg/pr28755.c
+
+# Error message: Never resolved function from blockaddress
+# It seems like a llvm bug after enable LTO
+# check it later
+gcc.c-torture/execute/920302-1.c
+
+# LLVM 5.0 release will optimize main function call abort directly
+# but the maintrunk 2017 Feb version won't.
+# Probably a optimization bug on release 5.0 branch ?
+gcc.c-torture/execute/20040409-1.c
+gcc.c-torture/execute/20040409-2.c
+gcc.c-torture/execute/20040409-3.c
+
+# LTO test case fail due to LLVM LTO not expect LTO with -Os
+gcc.dg/lto/const-uniq
+gcc.dg/lto/pr60461
+
+# LLVM LTO constant propogation result not as GCC expect
+gcc.dg/lto/ipacp
+gcc.dg/lto/ipareference2
+gcc.dg/lto/ipareference
+
+# LLVM LTO testcase expect to generate share object without main function
+# but we don't support pic yet.
+gcc.dg/lto/pr54709
+gcc.dg/lto/pr61526
+gcc.dg/lto/pr64415
+
+# LLVM show error : reference to 'in6addr_any' is ambiguous
+gcc.dg/lto/pr60820
+
+# LLVM show error : use of undeclared identifier '__transaction_atomic'
+gcc.dg/lto/trans-mem-3
+
+# LLVM not support tan math function with f128 parameter
+gcc.dg/builtins-7.c
+
+# clang for rv64 will fail to generate AST
+# It seems like a clang bug
+gcc.dg/float-exact-1.c
+
+# the test case will link fail due to section overlap
+# It seems like a linker script issue.
+gcc.dg/compat/struct-by-value-18

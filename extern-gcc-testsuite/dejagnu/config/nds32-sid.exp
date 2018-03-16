@@ -1,0 +1,98 @@
+# Test Framework Driver for GDB driving an external simulator
+#   Copyright 1999-2014 Free Software Foundation, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# We can not use the same flow as config/gdbserver.exp and
+# lib/gdbserver-support.exp in GDB testsuite. Gdbserver does not need to
+# load program into target, so it just overrides gdb_reload to work well.
+# But its flow is well-tested in gdb testsuite, so we use the setting from
+# gdbserver to control some path. (define gdb,do_reload_on_run to 1)
+#
+# Unfortunately when gdb,do_reload_on_run is 1, the implementation for sid.exp
+# can not work well in both mi and non-mi test cases.
+# To solve this, we need to override the flow in gdb_load.
+#
+# ${srcdir}/config/sid.exp is necessary for SID testing to run, and
+# gdb_load has been overridden there. So we use a tricky way to override
+# it again.
+#
+# gdb_load -- load a file into the debugger.
+#             return a -1 if anything goes wrong.
+#
+proc gdb_load { arg } {
+    global verbose
+    global loadpath
+    global loadfile
+    global GDB
+    global gdb_prompt
+    global retval
+
+    if { $arg != "" } {
+	if [gdb_file_cmd $arg] then { return -1 }
+	# We will define gdb,do_reload_on_run to be 1. So the program will be
+	# loaded again in gdb_reload. If we do not return here, the gdb_target_sid
+	# later will hang on.
+	return 0
+    } else {
+	send_gdb "kill\n"
+	gdb_expect 120 {
+	    -re "Kill the program being debugged. .y or n. $" {
+		send_gdb "y\n"
+		verbose "\t\tKilling previous program being debugged"
+		exp_continue
+	    }
+	    -re "$gdb_prompt $" {
+		# OK.
+	    }
+	}
+    }
+
+    gdb_target_sid
+
+    send_gdb "load\n"
+    global timeout
+    set prev_timeout $timeout
+    set timeout 2400
+    verbose "Timeout is now $timeout seconds" 2
+    gdb_expect {
+	-re ".*\[Ee\]rror.*$gdb_prompt $" {
+	    if $verbose>1 then {
+		perror "Error during download."
+	    }
+	    set retval -1
+	}
+	-re ".*$gdb_prompt $" {
+	    if $verbose>1 then {
+		send_user "Loaded $arg into $GDB\n"
+	    }
+	    set retval 0
+	}
+	-re "$gdb_prompt $"     {
+	    if $verbose>1 then {
+		perror "GDB couldn't load."
+	    }
+	    set retval -1
+	}
+	timeout {
+	    if $verbose>1 then {
+		perror "Timed out trying to load $arg."
+	    }
+	    set retval -1
+	}
+    }
+    set timeout $prev_timeout
+    verbose "Timeout is now $timeout seconds" 2
+    return $retval
+}

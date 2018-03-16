@@ -1,0 +1,116 @@
+#! /usr/bin/env python2
+
+import sys
+import os
+import argparse
+import lib
+
+this_script = os.path.realpath(__file__)
+this_script_path = os.path.dirname(this_script)
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--with-target-cc=', type=str, nargs=1,
+                    help='Path to target C compiler.')
+parser.add_argument('--with-target-cxx=', type=str, nargs=1,
+                    help='Path to target C++ compiler.')
+parser.add_argument('--target=', type=str, nargs=1,
+                    help='What target triplet you want to test.')
+parser.add_argument('--with-host-cc=', type=str, nargs=1,
+                    help='Host C compiler.')
+parser.add_argument('--with-target-sim=', type=str, nargs=1,
+                    help='Path to simulator.')
+parser.add_argument('--with-target-board=', type=str, nargs=1,
+                    help='Target board exp for running dejagnu.')
+parser.add_argument('--with-gcc-source=', type=str, nargs=1,
+                    help='Path to GCC source tree.')
+parser.add_argument('--extra-cflags=', type=str, nargs=1,
+                    help='Extra C flags to testing.')
+
+if (len(sys.argv) == 1):
+    parser.print_help()
+
+args = parser.parse_args(sys.argv[1:])
+
+v = vars(args)
+error = False
+
+# Check options:
+
+for key, val in v.iteritems():
+    print key, val
+    if key == 'with_target_cc=':
+        if v[key] is None:
+            error = True
+        else:
+            p = lib.find_prog(v[key][0])
+            if p is None:
+                print ("`%s` not found!" % val)
+                error = True
+                v[key] = None
+            else:
+                v[key] = val[0]
+    elif key == 'with_target_board=':
+        if v[key] is None:
+            print ("`%s` not given!" % key)
+            error = True
+        else:
+            v[key] = val[0]
+    else:
+        if key == 'target=' and val != None:
+            v[key] = v[key][0]
+        elif key == 'with_gcc_source=':
+            if val is None:
+                v[key] = os.path.join(
+                             this_script_path,
+                             'testsuite-gcc-6.1.0')
+            else:
+                # TODO: Check the path is valid gcc testsuite
+                v[key] = v[key][0]
+        elif key == 'extra_cflags=':
+            if val is None:
+                v[key] = ''
+            else:
+                v[key] = v[key][0]
+        else:
+            if val is None:
+                if key != 'with_host_cc=':
+                    continue
+                else:
+                    p = None
+            else:
+                p = lib.find_prog(v[key][0])
+
+            if (p is None and key == 'with_host_cc='):
+                p = lib.find_prog('gcc')
+
+            if p is None:
+                print ("`%s` not found!" % val)
+
+            v[key] = p
+
+if error:
+    parser.print_help()
+    sys.exit(1)
+
+is_clang = v['with_target_cc='].endswith('clang')
+
+host = lib.run([v['with_host_cc='], '-dumpmachine']).strip()
+if v['target='] is None:
+    v['target='] = lib.run([v['with_target_cc='], '-dumpmachine']).strip()
+
+exp = os.path.join(os.getcwd(), 'site.exp')
+replace_vars = dict()
+replace_vars['SRC'] = this_script_path
+replace_vars['TESTSUITE'] = v['with_gcc_source=']
+replace_vars['RUNTESTFLAGS'] = "--target_board=%s" % v['with_target_board=']
+replace_vars['RUN_PATH'] = os.path.dirname(v['with_target_cc='])
+replace_vars['DEJAGNULIBS'] = os.path.join(this_script_path, 'dejagnu')
+lib.gen_makefile(os.path.join(this_script_path, 'Makefile.in'),
+                 os.path.join(os.getcwd(), 'Makefile'),
+                 replace_vars)
+
+lib.gen_site_exp(
+    target=v['target='], target_cc=v['with_target_cc='], target_cxx=v['with_target_cxx='],
+    target_sim=v['with_target_sim='], host=host, host_cc=v['with_host_cc='],
+    test_dir=os.getcwd(), test_source_dir=v['with_gcc_source='],
+    extra_clags=v['extra_cflags='], is_clang=is_clang, exp=exp)

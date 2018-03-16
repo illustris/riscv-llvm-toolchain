@@ -1,0 +1,322 @@
+# Test Framework Driver for GDB driving an external simulator
+#   Copyright 1999-2014 Free Software Foundation, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# Some proc in lib/gdb.exp and lib/mi-support.exp need to be overridden,
+# and we don't have nds32-ice.exp in ${srcdir}/config.
+# So we load libs and override them now.
+load_lib gdb.exp
+
+load_lib mi-support.exp
+
+load_lib trace-support.exp
+
+proc ice_restart { prompt_pattern } {
+    global env
+
+    if {[info exists env(AE210P_DLMB)]} {
+	send_gdb "reset-and-hold\n"
+	gdb_expect 5 {
+	    -re "$prompt_pattern" { }
+	    default {
+	    perror "reset-and-hold for target failed"
+	    return
+	    }
+	}
+	send_gdb "set \$ir0=(int)\$ir0 & ~0x6\n"
+	gdb_expect 5 {
+	    -re "$prompt_pattern" { }
+	    default {
+	    perror "Set PSW.INTL to 0 for target failed"
+	    return
+	    }
+	}
+	send_gdb "set \$mr7=$env(AE210P_DLMB) + 0x1\n"
+	gdb_expect 5 {
+	    -re "$prompt_pattern" { }
+	    default {
+	    perror "Init DLMB for target failed"
+	    return
+	    }
+	}
+    } else {
+	send_gdb "reset-and-run\n"
+	gdb_expect 5 {
+	    -re "$prompt_pattern" { }
+	    default {
+	    perror "reset-and-run for target failed"
+	    return
+	    }
+	}
+    }
+}
+
+# gdb_target_ice
+# Set gdb to target the ICEman/OpenOCD
+#
+proc send_target_ice { } {
+    # wait a little while, giving ice time to shut down & restart its
+    # gdb socket
+    #sleep 4
+    send_gdb "target [target_info gdb_protocol] [target_info netport]\n"
+}
+
+proc gdb_target_ice { } {
+    global gdb_prompt
+    global exit_status
+    global timeout
+    set prev_timeout $timeout
+
+    for {set i 1} {$i <= 3} {incr i} {
+
+	send_target_ice
+
+	set timeout 30
+	verbose "Timeout is now $timeout seconds" 2
+	gdb_expect {
+	    -re "Remote communication error.  Target disconnected.: Connection reset by peer.*$gdb_prompt $" {
+		verbose "Connection reset by peer. Pausing, and trying again."
+		sleep 3
+		continue
+	    }
+	    -re "unknown host.*$gdb_prompt $" {
+		verbose "Couldn't look up stub"
+		cleanup
+		gdb_exit
+	    }
+	    -re "Couldn't establish connection to remote.*$gdb_prompt $" {
+		verbose "Connection failed";
+		cleanup
+		gdb_exit
+	    }
+	    -re "Remote debugging using.*$gdb_prompt" {
+		verbose "Set target to ice"
+		set timeout $prev_timeout
+		verbose "Timeout is now $timeout seconds" 2
+		return
+	    }
+	    timeout {
+		perror "Couldn't set target for remote stub."
+		cleanup
+		gdb_exit
+	    }
+	}
+    }
+    if {$i == 4} {
+	perror "Couldn't set target for remote stub. Maybe increase max retry time"
+	cleanup
+	gdb_exit
+    }
+}
+
+# We can not use the same flow as config/gdbserver.exp and
+# lib/gdbserver-support.exp in GDB testsuite. Gdbserver does not need to
+# load program into target, so it just overrides gdb_reload to work well.
+# But its flow is well-tested in gdb testsuite, so we use the setting from
+# gdbserver to control some path. (define gdb,do_reload_on_run to 1)
+#
+# Unfortunately when gdb,do_reload_on_run is 1, the implementation for sid.exp
+# can not work well in both mi and non-mi test cases.
+# To solve this, we need to override the flow in gdb_load.
+#
+# The 'load program' part is from config/sid.exp config/monitor.exp
+# in GDB testsuite.
+# difference from nds32-sid:
+# 1. add extra condition for reconnecting
+# 2. add reset-and-run between 'target remote' and 'load'.
+
+# gdb_load -- load a file into the debugger.
+#             return a -1 if anything goes wrong.
+#
+proc gdb_load { arg } {
+    global verbose
+    global loadpath
+    global loadfile
+    global GDB
+    global gdb_prompt
+    global retval
+
+    if { $arg != "" } {
+	if [gdb_file_cmd $arg] then { return -1 }
+	# We will define gdb,do_reload_on_run to be 1. So the program will be
+	# loaded again in gdb_reload. If we do not return here, the gdb_target_sid
+	# later will hang on.
+	return 0
+    } else {
+	send_gdb "kill\n"
+	gdb_expect 120 {
+	    -re "Kill the program being debugged. .y or n. $" {
+		send_gdb "y\n"
+		verbose "\t\tKilling previous program being debugged"
+		exp_continue
+	    }
+	    -re "$gdb_prompt $" {
+		# OK.
+	    }
+	}
+    }
+
+    gdb_target_ice
+
+    ice_restart "$gdb_prompt $"
+
+    send_gdb "load\n"
+    global timeout
+    set prev_timeout $timeout
+    set timeout 2400
+    verbose "Timeout is now $timeout seconds" 2
+    gdb_expect {
+	-re ".*\[Ee\]rror.*$gdb_prompt $" {
+	    if $verbose>1 then {
+		perror "Error during download."
+	    }
+	    set retval -1
+	}
+	-re ".*$gdb_prompt $" {
+	    if $verbose>1 then {
+		send_user "Loaded $arg into $GDB\n"
+	    }
+	    set retval 0
+	}
+	-re "$gdb_prompt $"	{
+	    if $verbose>1 then {
+		perror "GDB couldn't load."
+	    }
+	    set retval -1
+	}
+	timeout {
+	    if $verbose>1 then {
+		perror "Timed out trying to load $arg."
+	    }
+	    set retval -1
+	}
+    }
+    set timeout $prev_timeout
+    verbose "Timeout is now $timeout seconds" 2
+    return $retval
+}
+
+#
+# connect to the target and download a file, if necessary.
+# return a -1 if anything goes wrong.
+#
+# Overwrite the original flow in lib/mi-support.exp
+# difference:
+# 1. add reset-and-run between 'target remote' and 'load'.
+#
+proc mi_gdb_target_load { } {
+    global verbose
+    global loadpath
+    global loadfile
+    global GDB
+    global mi_gdb_prompt
+
+    if [target_info exists gdb_load_timeout] {
+	set loadtimeout [target_info gdb_load_timeout]
+    } else {
+	set loadtimeout 1600
+    }
+
+    # remote targets
+    if { [mi_gdb_target_cmd "remote" [target_info netport]] != 0 } {
+	perror "Unable to connect to remote target"
+	return -1
+    }
+
+    ice_restart "$mi_gdb_prompt$"
+
+    send_gdb "48-target-download\n"
+    gdb_expect $loadtimeout {
+	-re "48\\^done.*$mi_gdb_prompt$" {
+	}
+	timeout {
+	perror "Unable to download to remote target (timeout)"
+	return -1
+	}
+    }
+    return 0
+}
+
+# Send GDB the "target" command.
+# FIXME: Some of these patterns are not appropriate for MI.  Based on
+# config/monitor.exp:gdb_target_command.
+#
+# Overwrite the original flow in lib/mi-support.exp
+# difference:
+# 1. add extra condition for reconnecting
+#
+proc mi_gdb_target_cmd { targetname serialport } {
+    global mi_gdb_prompt
+
+    set serialport_re [string_to_regexp $serialport]
+    for {set i 1} {$i <= 3} {incr i} {
+	send_gdb "47-target-select $targetname $serialport\n"
+	gdb_expect 60 {
+	    -re "Remote communication error.  Target disconnected.: Connection reset by peer.*$mi_gdb_prompt$" {
+		verbose "Connection reset by peer. Pausing, and trying again."
+		sleep 3
+		continue
+	    }
+	    -re "47\\^connected.*$mi_gdb_prompt$" {
+		verbose "Set target to $targetname";
+		return 0;
+	    }
+	    -re "unknown host.*$mi_gdb_prompt$" {
+		verbose "Couldn't look up $serialport"
+	    }
+	    -re "Couldn't establish connection to remote.*$mi_gdb_prompt$" {
+		verbose "Connection failed";
+	    }
+	    -re "Remote MIPS debugging.*$mi_gdb_prompt$" {
+		verbose "Set target to $targetname";
+		return 0;
+	    }
+	    -re "Remote debugging using .*$serialport_re.*$mi_gdb_prompt$" {
+		verbose "Set target to $targetname";
+		return 0;
+	    }
+	    -re "Remote target $targetname connected to.*$mi_gdb_prompt$" {
+		verbose "Set target to $targetname";
+		return 0;
+	    }
+	    -re "Connected to.*$mi_gdb_prompt$" {
+		verbose "Set target to $targetname";
+		return 0;
+	    }
+	    -re "Ending remote.*$mi_gdb_prompt$" { }
+	    -re "Connection refused.*$mi_gdb_prompt$" {
+		verbose "Connection refused by remote target.  Pausing, and trying again."
+		sleep 5
+		continue
+	    }
+	    -re "Non-stop mode requested, but remote does not support non-stop.*$mi_gdb_prompt$" {
+		unsupported "Non-stop mode not supported"
+		return 1
+	    }
+	    -re "Timeout reading from remote system.*$mi_gdb_prompt$" {
+		verbose "Got timeout error from gdb.";
+	    }
+	    timeout {
+		send_gdb "";
+		continue
+	    }
+	}
+    }
+    return 1
+}
+
+proc gdb_target_supports_trace { } {
+    return 0
+}

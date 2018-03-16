@@ -1,0 +1,68 @@
+# Copyright (C) 1997, 1998, 1999, 2000, 2001, 2002, 2003 Free Software
+# Foundation, Inc.
+#
+# This file is part of DejaGnu.
+#
+# DejaGnu is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# DejaGnu is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with DejaGnu; if not, write to the Free Software Foundation,
+# Inc., 51 Franklin Street - Fifth Floor, Boston, MA 02110-1301, USA.
+
+# This is a list of toolchains that are supported on this board.
+set_board_info target_install {nds32-elf}
+
+# Load a baseboard description for SID simulators.
+load_base_board_description "basic-sid"
+
+proc find_nds32_conf { } {
+    set nds32_gcc_path [file dir [which [find_gcc]]]
+    set try [glob -directory "${nds32_gcc_path}/../config" nds32-target-config.conf]
+    return $try
+}
+
+proc find_nds32_sid { } {
+    set nds32_gcc_path [file dir [which [find_gcc]]]
+    set try [glob -directory "${nds32_gcc_path}/../../../simulation/nds32-simulator" sid]
+    return $try
+}
+
+#set_board_info sim "[find_nds32_sid]"
+set nds32_conf_line_vios_mode {-e "set cpu cpu-option \"--environment user --config-default-exception-support 1\""}
+set_board_info sim,options "-f [find_nds32_conf] ${nds32_conf_line_vios_mode}"
+set_board_info sim,protocol "sid"
+set_board_info gdb,start_symbol "_start"
+set_board_info gcc,timeout 600
+set_board_info exit_is_reliable 1
+set_board_info ldflags "[libgloss_link_flags] [newlib_link_flags] -mvh"
+
+# The port range is limited in nds32 port sid
+set_board_info netport localhost:[expr {9898 + [clock clicks] % 100}]
+#verbose "Using simulator [board_info $board sim]\n"
+#verbose "Using sid conf  [board_info $board sim,options]\n"
+
+## define SIGNAL_SUPPRESS to avoid signal testing (because our simulation has not supported yet)
+#set_board_info cflags "[libgloss_include_flags] [newlib_include_flags] -DSIGNAL_SUPPRESS"
+#set_board_info ldflags "[libgloss_link_flags] [newlib_link_flags]"
+
+# Load the generic configuration for this board. This will define a basic set
+# of routines needed by the tool to communicate with the board.
+load_generic_config "sid"
+
+# Use the alike flow as gdbserver
+set_board_info gdb,do_reload_on_run 1
+
+# Ugly workaround for testing on sid
+# Using ${whole_name}_init hook flow in setup_target_hook to override
+# gdb_load in ${srcdir}/config/sid.exp.
+proc ${board}_init { arg } {
+    load_generic_config "nds32-sid"
+}
