@@ -59,6 +59,7 @@ install-llvm: all-llvm $(SYSROOT) $(CLANG_WRAPPERS)
 
 $(SYSROOT): stamps/build-riscv-gnu-toolchain
 	mkdir -p $(SYSROOT)
+	rm -f $(SYSROOT)/usr/riscv64-unknown-elf
 	ln -s -r $(INSTALL_DIR)/$(NEWLIB_TUPLE)/ $(SYSROOT)/usr
 
 stamps/build-riscv-gnu-toolchain:
