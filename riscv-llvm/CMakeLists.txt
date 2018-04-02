@@ -143,7 +143,7 @@ foreach(proj ${LLVM_ENABLE_PROJECTS})
 endforeach()
 
 # Build llvm with ccache if the package is present
-set(LLVM_CCACHE_BUILD OFF CACHE BOOL "Set to ON for a ccache enabled build")
+set(LLVM_CCACHE_BUILD ON CACHE BOOL "Set to ON for a ccache enabled build")
 if(LLVM_CCACHE_BUILD)
   find_program(CCACHE_PROGRAM ccache)
   if(CCACHE_PROGRAM)
