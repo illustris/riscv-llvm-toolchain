@@ -178,6 +178,7 @@ def llvm_f80_ty        : LLVMType<f80>;
 def llvm_f128_ty       : LLVMType<f128>;
 def llvm_ppcf128_ty    : LLVMType<ppcf128>;
 def llvm_ptr_ty        : LLVMPointerType<llvm_i8_ty>;             // i8*
+def llvm_i64ptr_ty     : LLVMPointerType<llvm_i64_ty>;            // i8*
 def llvm_ptrptr_ty     : LLVMPointerType<llvm_ptr_ty>;            // i8**
 def llvm_anyptr_ty     : LLVMAnyPointerType<llvm_i8_ty>;          // (space)i8*
 def llvm_empty_ty      : LLVMType<OtherVT>;                       // { }
@@ -968,8 +969,8 @@ def int_riscv_validate : GCCBuiltin<"__builtin_riscv_validate">,
 
 let TargetPrefix = "RISCV" in {
 def int_riscv_hash : GCCBuiltin<"__builtin_riscv_hash">,
-          Intrinsic<[llvm_i64_ty],  // return type
-                          [llvm_i64_ty],  // two 32 bit integer as parameter
-                          [],             // properties nothing 
+          Intrinsic<[llvm_i32_ty],            // return 32 bit hash
+                          [llvm_i64ptr_ty],   // address to store cookie at
+                          [],                 // properties: nothing 
                           "llvm.RISCV.hash">; // name or description
 }
