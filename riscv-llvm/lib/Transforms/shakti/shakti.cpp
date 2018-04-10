@@ -128,7 +128,7 @@ namespace {
 				DataLayout *D = new DataLayout(&M);
 
 				LLVMContext &Ctx = F.getContext();
-				std::vector<Type*> craftParamTypes = {Type::getInt32Ty(Ctx),Type::getInt32Ty(Ctx),Type::getInt32Ty(Ctx),Type::getInt32Ty(Ctx)};
+				std::vector<Type*> craftParamTypes = {Type::getInt32Ty(Ctx),Type::getInt32Ty(Ctx),Type::getInt32Ty(Ctx),Type::getInt64Ty(Ctx)};
 				Type *craftRetType = Type::getInt128Ty(Ctx);
 				FunctionType *craftFuncType = FunctionType::get(craftRetType, craftParamTypes, false);
 				Value *craftFunc = F.getParent()->getOrInsertFunction("craft", craftFuncType);

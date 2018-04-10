@@ -969,7 +969,7 @@ def int_riscv_validate : GCCBuiltin<"__builtin_riscv_validate">,
 
 let TargetPrefix = "RISCV" in {
 def int_riscv_hash : GCCBuiltin<"__builtin_riscv_hash">,
-          Intrinsic<[llvm_i32_ty],            // return 32 bit hash
+          Intrinsic<[llvm_i64_ty],            // return 32 bit hash
                           [llvm_i64ptr_ty],   // address to store cookie at
                           [],                 // properties: nothing 
                           "llvm.RISCV.hash">; // name or description

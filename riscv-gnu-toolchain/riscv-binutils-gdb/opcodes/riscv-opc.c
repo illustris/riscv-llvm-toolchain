@@ -685,6 +685,7 @@ const struct riscv_opcode riscv_opcodes[] =
 
 /*Shakti T instructions*/
 {"hash",      "I",   "d,s",    MATCH_HASH, MASK_HASH, match_opcode, 0},
+{"val",      "I",   "d,s",    MATCH_VAL, MASK_VAL, match_opcode, 0},
 
 /* Terminate the list.  */
 {0, 0, 0, 0, 0, 0, 0}

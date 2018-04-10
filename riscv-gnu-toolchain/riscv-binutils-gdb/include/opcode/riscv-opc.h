@@ -5,6 +5,9 @@
 #define MATCH_HASH 0xb
 #define MASK_HASH  0xfff0707f
 
+#define MATCH_VAL 0x2b
+#define MASK_VAL  0xfff0707f
+
 #define MATCH_SLLI_RV32 0x1013
 #define MASK_SLLI_RV32  0xfe00707f
 #define MATCH_SRLI_RV32 0x5013

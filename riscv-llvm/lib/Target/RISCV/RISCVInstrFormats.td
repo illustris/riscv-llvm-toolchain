@@ -381,8 +381,39 @@ class CJ<bits<3> funct3, bits<2> opcode, dag outs, dag ins,
 
 //class RISCV32Inst<dag outs, dag ins, string asmstr, list<dag> pattern, Format format>
 
-class MyInst<dag outs, dag ins, string asmstr, list<dag> pattern>
-  : RISCV32Inst<outs, ins, asmstr, pattern, FrmPseudo> {
+class ValInst<dag outs, dag ins, string asmstr, list<dag> pattern>
+  : RISCV32Inst<outs, ins, asmstr, pattern, FrmI> {
   let Pattern = pattern;
   //let CodeSize = 3;
+  //bits<12> imm12;
+  bits<5> rs1;
+  bits<5> rs2;
+
+  field bits<32> Inst;
+
+  let Inst{31-20} = 0;
+  let Inst{19-15} = rs1;
+  let Inst{14-12} = 0;
+  let Inst{11-7} = rs2;
+  let Inst{6-2} = 10;
+  let Inst{1-0} = 3;
+}
+
+class HashInst<dag outs, dag ins, string asmstr, list<dag> pattern>
+  : RISCV32Inst<outs, ins, asmstr, pattern, FrmI> {
+  let Pattern = pattern;
+  //let CodeSize = 3;
+  //bits<12> imm12;
+  bits<5> rs1;
+  bits<5> rs2;
+  //bits<5> rd;
+
+  field bits<32> Inst;
+
+  let Inst{31-20} = 0;
+  let Inst{19-15} = rs1;
+  let Inst{14-12} = 0;
+  let Inst{11-7} = rs2;
+  let Inst{6-2} = 2;
+  let Inst{1-0} = 3;
 }

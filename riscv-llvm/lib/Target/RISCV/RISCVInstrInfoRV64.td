@@ -390,3 +390,11 @@ def CSRRCI64 : CSR64_ri<0b111, "csrrci">;
 }
 
 def : InstAlias<"nop", (SLLI64 X0_64, X0_64, 0)>, Requires<[IsRV64]>;
+
+//===----------------------------------------------------------------------===//
+// Shakti-T intrinsics
+//===----------------------------------------------------------------------===//
+
+// Validate instruction used to verify pointers before dereferencing
+def riscv_validate : ValInst<(outs), (ins GPR64:$rd, GPR64:$rs1 ), "val\t$rd, $rs1", [(set (int_riscv_validate GPR64:$rd, GPR64:$rs1))]>;
+def riscv_hash : HashInst<(outs GPR64:$rd), (ins GPR64:$rs1), "hash\t$rd, $rs1", [(set GPR64:$rd, (int_riscv_hash GPR64:$rs1))]>;
