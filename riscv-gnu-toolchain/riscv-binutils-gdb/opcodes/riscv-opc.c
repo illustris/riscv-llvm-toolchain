@@ -683,6 +683,9 @@ const struct riscv_opcode riscv_opcodes[] =
 {"sfence.vma","I",   "s,t",  MATCH_SFENCE_VMA, MASK_SFENCE_VMA, match_opcode, 0 },
 {"wfi",       "I",   "",     MATCH_WFI, MASK_WFI, match_opcode, 0 },
 
+/*Shakti T instructions*/
+{"hash",      "I",   "d,s",    MATCH_HASH, MASK_HASH, match_opcode, 0},
+
 /* Terminate the list.  */
 {0, 0, 0, 0, 0, 0, 0}
 };
