@@ -260,12 +260,19 @@ namespace {
 							std::vector<Value *> args;
 							args.push_back(trunc);
 							args.push_back(trunc);
-							args.push_back(
-								llvm::ConstantInt::get(
-									Type::getInt32Ty(Ctx),
-									(D->getTypeAllocSize(op->getAllocatedType()))
-								)
-							);
+							if(dyn_cast<ConstantInt>(op->getArraySize()))
+								args.push_back(
+									llvm::ConstantInt::get(
+										Type::getInt32Ty(Ctx),
+										(D->getTypeAllocSize(op->getAllocatedType()))
+									)
+								);
+							else
+							{
+								BinaryOperator *total_off =  BinaryOperator::Create(Instruction::Mul, op->getArraySize(), llvm::ConstantInt::get(Type::getInt64Ty(Ctx),(D->getTypeAllocSize(op->getAllocatedType()))) , "off", op);
+								TruncInst *total_off_trunc = new TruncInst(total_off, Type::getInt32Ty(Ctx),"offt", op);
+								args.push_back(total_off_trunc);
+							}
 							args.push_back(st_hash);
 							ArrayRef<Value *> args_ref(args);
 
