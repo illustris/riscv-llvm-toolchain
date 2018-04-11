@@ -255,7 +255,7 @@ namespace {
 								continue;
 							}
 
-							PtrToIntInst *trunc = new PtrToIntInst(op, Type::getInt32Ty(Ctx),"",op->getNextNode());
+							PtrToIntInst *trunc = new PtrToIntInst(op, Type::getInt32Ty(Ctx),"pti",op->getNextNode());
 
 							std::vector<Value *> args;
 							args.push_back(trunc);
