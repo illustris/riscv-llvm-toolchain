@@ -8,6 +8,7 @@
 #include "llvm/IR/DerivedTypes.h"
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/IRBuilder.h"
+#include "llvm/IR/CallSite.h"
 #include <stack>
 
 using namespace llvm;
@@ -134,6 +135,15 @@ namespace {
 				Value *craftFunc = F.getParent()->getOrInsertFunction("craft", craftFuncType);
 				CallInst *st_hash;
 
+				for(Function::arg_iterator j = F.arg_begin(), end = F.arg_end(); j != end; ++j)
+				{
+					if(j->getType()->isPointerTy() && F.getName() != "llvm.RISCV.hash")
+					{
+						j->mutateType(Type::getInt128Ty(Ctx));
+						//errs()<<*j<<"\n";
+					}
+				}//*/
+
 				Module *m = F.getParent();
 				Function *val = Intrinsic::getDeclaration(m, Intrinsic::riscv_validate);	// get hash intrinsic declaration
 
@@ -212,6 +222,7 @@ namespace {
 						{
 							modified=true;
 							Value *offset = resolveGetElementPtr(op,D,Ctx);
+							//errs()<<"\n-----------\n"<<*offset<<"\n-----------\n";
 
 							ZExtInst *zext_binop = new ZExtInst(offset, Type::getInt128Ty(Ctx), "zextarrayidx", op);
 							BinaryOperator *binop =  BinaryOperator::Create(Instruction::Add, op->getOperand(0), zext_binop , "arrayidx", op);
@@ -243,10 +254,24 @@ namespace {
 						else if (auto *op = dyn_cast<AllocaInst>(I))
 						{
 							modified=true;
+							//errs()<<"\n-----------\nAlloca:\t"<<*op<<"\n-----------\n";
 							if(op->getAllocatedType()->isPointerTy())
 							{
+								//errs()<<"\n-----------\nptrAlloca:\t"<<*op<<"\n-----------\n";
 								op->setAllocatedType(Type::getInt128Ty(Ctx));
 								op->mutateType(Type::getIntNPtrTy(Ctx,128));
+								/*for (auto &U : op->uses())
+								{
+									if(!flag)
+									{
+										flag = true;
+										continue;
+									}
+
+									User *user = U.getUser();
+									users.push(user);
+									pos.push(U.getOperandNo());
+							    }*/
 							}
 
 							if (op->getName() == "stack_cookie")
@@ -308,8 +333,132 @@ namespace {
 						}
 					}
 				}
+				/*errs()<<"\n*************************************************\n";
+				errs()<<F;
+				errs()<<"\n*************************************************\n";//*/
 			}
 
+			Module::FunctionListType &functions = M.getFunctionList();
+			std::stack< Function * > to_replace_functions;
+			std::stack< Function * > replace_with_functions;
+
+			for (Module::FunctionListType::iterator it = functions.begin(), it_end = functions.end(); it != it_end; ++it)
+			{
+				//Function *func = dyn_cast<Function>(it);
+				Function &func = *it;
+				LLVMContext &Ctx = func.getContext();
+				if(func.getName() == "llvm.RISCV.hash")
+					continue;
+
+				std::vector<Type*> fParamTypes;
+				bool fnHasPtr = false;
+				fnHasPtr = (func.getReturnType()->isPointerTy() ? true : false);
+
+				Type *fRetType = (func.getReturnType()->isPointerTy() ? Type::getInt128Ty(Ctx) : func.getReturnType());
+				for(FunctionType::param_iterator k = (func.getFunctionType())->param_begin(), endp = (func.getFunctionType())->param_end(); k != endp; ++k)
+				{
+					if((*k)->isPointerTy())
+					{
+						//j->mutateType(Type::getInt128Ty(Ctx));
+						fnHasPtr = true;
+						fParamTypes.push_back(Type::getInt128Ty(Ctx));
+						//errs()<<**k<<"\n";
+					}
+					else
+						fParamTypes.push_back(*k);
+					//errs()<<"\npushed "<<*(fParamTypes.back());
+				}
+				if(!fnHasPtr)
+					continue;
+				FunctionType *fType = FunctionType::get(fRetType, fParamTypes, func.getFunctionType()->isVarArg());
+				Function *NF = Function::Create(fType, func.getLinkage(), func.getName());
+				NF->copyAttributesFrom(&func);
+				NF->getBasicBlockList().splice(NF->begin(), func.getBasicBlockList());
+				to_replace_functions.push(&func);
+				replace_with_functions.push(NF);
+			}
+
+			while(!to_replace_functions.empty())
+			{
+				Function *funcx = to_replace_functions.top();
+				Function *funcy = replace_with_functions.top();
+				//errs()<<"\nto replace: "<<*funcx<<"\n";
+				to_replace_functions.pop();
+				replace_with_functions.pop();
+				M.getFunctionList().push_back(funcy);
+				while (!funcx->use_empty()) {
+					//errs()<<"USER:\n"<<*(funcx->user_back())<<"\n";
+					CallSite CS(funcx->user_back());
+					std::vector< Value * > args(CS.arg_begin(), CS.arg_end());
+					Instruction *call = CS.getInstruction();
+					Instruction *new_call = NULL;
+					const AttributeList &call_attr = CS.getAttributes();
+					new_call = CallInst::Create(funcy, args, "", call);
+					CallInst *ci = cast< CallInst >(new_call);
+					ci->setCallingConv(CS.getCallingConv());
+					ci->setAttributes(call_attr);
+					if (ci->isTailCall())
+						ci->setTailCall();
+                    new_call->setDebugLoc(call->getDebugLoc());
+                    if (!call->use_empty())
+                    {
+						call->replaceAllUsesWith(new_call);
+					}
+					new_call->takeName(call);
+					call->eraseFromParent();
+				}
+			}
+
+			/*std::vector<Function*> origF;
+			std::vector<Function*> repwithF;
+			for (auto &F : M)
+			{
+				LLVMContext &Ctx = F.getContext();
+				bool fnHasPtr = false;
+				std::vector<Type*> fParamTypes;
+				fnHasPtr = (F.getReturnType()->isPointerTy() ? true : false);
+
+				Type *fRetType = (F.getReturnType()->isPointerTy() ? Type::getInt128Ty(Ctx) : F.getReturnType());
+
+				for(FunctionType::param_iterator k = (F.getFunctionType())->param_begin(), endp = (F.getFunctionType())->param_end(); k != endp; ++k)
+				{
+					if((*k)->isPointerTy() && F.getName() != "llvm.RISCV.hash")
+					{
+						//j->mutateType(Type::getInt128Ty(Ctx));
+						fnHasPtr = true;
+						fParamTypes.push_back(Type::getInt128Ty(Ctx));
+						//errs()<<**k<<"\n";
+					}
+					else
+						fParamTypes.push_back(*k);
+					//errs()<<"\npushed "<<*(fParamTypes.back());
+				}
+
+				if(fnHasPtr)
+				{
+					//errs()<<"--------------\nOld function:\n"<<F<<"\n----------------";
+					FunctionType *fType = FunctionType::get(fRetType, fParamTypes, F.getFunctionType()->isVarArg());
+					Function *NF = Function::Create(fType, F.getLinkage(), F.getName());
+					NF->copyAttributesFrom(&F);
+					NF->getBasicBlockList().splice(NF->begin(), F.getBasicBlockList());
+					F.getParent()->getFunctionList().insert((&F), (&(*NF)));
+					NF->takeName(&F);
+					//F.replaceAllUsesWith(NF);
+					//errs()<<"\nNew function: \n"<<*(NF)<<"\n--------------\n";
+				}
+			}//*/
+
+			/*for (auto &F : M)
+				for (auto &B : F)
+					for (auto &I : B)
+					{
+						if (auto *op = dyn_cast<CallInst>(&I))
+						{
+							errs()<<"\n--------------\nFound callinst\n"<<*op<<"\n";
+						}
+					}//*/
+
+			errs()<<"\n--------------\n"<<M<<"\n----------------\n";
 			return modified;
 		}
 	};
