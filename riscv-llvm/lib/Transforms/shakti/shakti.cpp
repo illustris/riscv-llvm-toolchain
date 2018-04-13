@@ -291,11 +291,18 @@ namespace {
 							Builder.CreateCall(val, args_ref,"");
 
 							Type *loadtype = op->getType();
+
+							if (loadtype->isPointerTy())
+							{
+								loadtype = Type::getInt128Ty(Ctx);
+								op->mutateType(loadtype);
+							}
 							Type *loadptrtype = loadtype->getPointerTo();
 
 							IntToPtrInst *ptr = new IntToPtrInst(tr_lo,loadptrtype,"ptr",op);
 
 							op->setOperand(0,ptr);
+							//errs()<<"\n=========\n"<<*ptr<<"\n-------\n"<<*op<<"\n-------\n"<<*loadtype<<"\n=========\n";
 
 						}
 
@@ -303,7 +310,7 @@ namespace {
 						{
 							modified=true;
 							Value *offset = resolveGetElementPtr(op,D,Ctx);
-							errs()<<"\n-----------\n"<<*offset<<"\n-----------\n";
+							//errs()<<"\n-----------\n"<<*offset<<"\n-----------\n";
 
 							ZExtInst *zext_binop = new ZExtInst(offset, Type::getInt128Ty(Ctx), "zextarrayidx", op);
 							BinaryOperator *binop =  BinaryOperator::Create(Instruction::Add, op->getOperand(0), zext_binop , "arrayidx", op);
@@ -348,6 +355,7 @@ namespace {
 			{
 				//Function *func = dyn_cast<Function>(it);
 				Function &func = *it;
+
 				LLVMContext &Ctx = func.getContext();
 				if(func.getName() == "llvm.RISCV.hash")
 					continue;
@@ -414,7 +422,7 @@ namespace {
 					}
 					new_call->takeName(call);
 					call->eraseFromParent();
-				}
+				}//*/
 
 				Function::arg_iterator arg_i2 = funcy->arg_begin();
 
@@ -426,6 +434,12 @@ namespace {
 					++arg_i2;
 					arg_index++;
 				}
+
+				/*errs()<<"\n*************************************************\n";
+				errs()<<funcy->getName()<<"\n-----\n"<<*(funcy->getFunctionType());
+				errs()<<"\n*************************************************\n";//*/
+				funcx->dropAllReferences();
+				funcx->removeFromParent();
 			}
 
 			/*std::vector<Function*> origF;
@@ -477,7 +491,7 @@ namespace {
 						}
 					}//*/
 
-			errs()<<"\n--------------\n"<<M<<"\n----------------\n";
+			//errs()<<"\n--------------\n"<<M<<"\n----------------\n";
 			return modified;
 		}
 	};
