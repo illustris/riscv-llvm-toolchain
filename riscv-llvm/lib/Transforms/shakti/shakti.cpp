@@ -153,105 +153,7 @@ namespace {
 					{
 						Instruction *I = dyn_cast<Instruction>(i);
 
-						if (auto *op = dyn_cast<StoreInst>(I)) {
-							if(op->getOperand(1)->getType() != Type::getInt128Ty(Ctx))
-								continue;
-							modified = true;
-							TruncInst *tr_lo = new TruncInst(op->getOperand(1), Type::getInt64Ty(Ctx),"fpr_low", op);	// alloca stack cookie
-							Value* shamt = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),64);
-							BinaryOperator *shifted =  BinaryOperator::Create(Instruction::LShr, op->getOperand(1), shamt , "fpr_hi_big", op);
-							TruncInst *tr_hi = new TruncInst(shifted, Type::getInt64Ty(Ctx),"fpr_hi", op);	// alloca stack cookie
-
-							// Set up intrinsic arguments
-							std::vector<Value *> args;
-
-							args.push_back(tr_hi);
-							args.push_back(tr_lo);
-							ArrayRef<Value *> args_ref(args);
-
-							// Create call to intrinsic
-							IRBuilder<> Builder(I);
-							Builder.SetInsertPoint(I);
-							Builder.CreateCall(val, args_ref,"");
-
-							Type *storetype = op->getOperand(0)->getType();
-							Type *storeptrtype = storetype->getPointerTo();
-
-							IntToPtrInst *ptr = new IntToPtrInst(tr_lo,storeptrtype,"ptr",op);
-
-							new StoreInst(op->getOperand(0),ptr,op);
-
-							--i;
-							op->dropAllReferences();
-						    op->removeFromParent();
-
-						}
-
-						else if (auto *op = dyn_cast<LoadInst>(I))
-						{
-							if(op->getOperand(0)->getType() != Type::getInt128Ty(Ctx))
-								continue;
-							modified = true;
-							TruncInst *tr_lo = new TruncInst(op->getOperand(0), Type::getInt64Ty(Ctx),"fpr_low", op);	// alloca stack cookie
-							Value* shamt = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),64);
-							BinaryOperator *shifted =  BinaryOperator::Create(Instruction::LShr, op->getOperand(0), shamt , "fpr_hi_big", op);
-							TruncInst *tr_hi = new TruncInst(shifted, Type::getInt64Ty(Ctx),"fpr_hi", op);	// alloca stack cookie
-
-							// Set up intrinsic arguments
-							std::vector<Value *> args;
-
-							args.push_back(tr_hi);
-							args.push_back(tr_lo);
-							ArrayRef<Value *> args_ref(args);
-
-							// Create call to intrinsic
-							IRBuilder<> Builder(I);
-							Builder.SetInsertPoint(I);
-							Builder.CreateCall(val, args_ref,"");
-
-							Type *loadtype = op->getType();
-							Type *loadptrtype = loadtype->getPointerTo();
-
-							IntToPtrInst *ptr = new IntToPtrInst(tr_lo,loadptrtype,"ptr",op);
-
-							op->setOperand(0,ptr);
-
-						}
-
-						else if (auto *op = dyn_cast<GetElementPtrInst>(I))
-						{
-							modified=true;
-							Value *offset = resolveGetElementPtr(op,D,Ctx);
-							//errs()<<"\n-----------\n"<<*offset<<"\n-----------\n";
-
-							ZExtInst *zext_binop = new ZExtInst(offset, Type::getInt128Ty(Ctx), "zextarrayidx", op);
-							BinaryOperator *binop =  BinaryOperator::Create(Instruction::Add, op->getOperand(0), zext_binop , "arrayidx", op);
-							
-							std::stack <User *> users;
-							std::stack <int> pos;
-
-							for (auto &U : op->uses())
-							{
-								User *user = U.getUser();
-								users.push(user);
-								pos.push(U.getOperandNo());
-							}
-
-							while(users.size())
-							{
-						    	User *u = users.top();
-						    	users.pop();
-						    	int index = pos.top();
-						    	pos.pop();
-						    	u->setOperand(index, binop);	
-						    }
-
-						    --i;
-						    op->dropAllReferences();
-						    op->removeFromParent();
-						}
-
-						else if (auto *op = dyn_cast<AllocaInst>(I))
+						if (auto *op = dyn_cast<AllocaInst>(I))
 						{
 							modified=true;
 							//errs()<<"\n-----------\nAlloca:\t"<<*op<<"\n-----------\n";
@@ -331,6 +233,105 @@ namespace {
 						    	u->setOperand(index, fpr);	
 						    }
 						}
+
+						else if (auto *op = dyn_cast<StoreInst>(I)) {
+							if(op->getOperand(1)->getType() != Type::getInt128Ty(Ctx))
+								continue;
+							modified = true;
+							TruncInst *tr_lo = new TruncInst(op->getOperand(1), Type::getInt64Ty(Ctx),"fpr_low", op);	// alloca stack cookie
+							Value* shamt = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),64);
+							BinaryOperator *shifted =  BinaryOperator::Create(Instruction::LShr, op->getOperand(1), shamt , "fpr_hi_big", op);
+							TruncInst *tr_hi = new TruncInst(shifted, Type::getInt64Ty(Ctx),"fpr_hi", op);	// alloca stack cookie
+
+							// Set up intrinsic arguments
+							std::vector<Value *> args;
+
+							args.push_back(tr_hi);
+							args.push_back(tr_lo);
+							ArrayRef<Value *> args_ref(args);
+
+							// Create call to intrinsic
+							IRBuilder<> Builder(I);
+							Builder.SetInsertPoint(I);
+							Builder.CreateCall(val, args_ref,"");
+
+							Type *storetype = op->getOperand(0)->getType();
+							Type *storeptrtype = storetype->getPointerTo();
+
+							IntToPtrInst *ptr = new IntToPtrInst(tr_lo,storeptrtype,"ptr",op);
+
+							new StoreInst(op->getOperand(0),ptr,op);
+
+							--i;
+							op->dropAllReferences();
+						    op->removeFromParent();
+
+						}
+
+						else if (auto *op = dyn_cast<LoadInst>(I))
+						{
+							if(op->getOperand(0)->getType() != Type::getInt128Ty(Ctx))
+								continue;
+							modified = true;
+							TruncInst *tr_lo = new TruncInst(op->getOperand(0), Type::getInt64Ty(Ctx),"fpr_low", op);	// alloca stack cookie
+							Value* shamt = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),64);
+							BinaryOperator *shifted =  BinaryOperator::Create(Instruction::LShr, op->getOperand(0), shamt , "fpr_hi_big", op);
+							TruncInst *tr_hi = new TruncInst(shifted, Type::getInt64Ty(Ctx),"fpr_hi", op);	// alloca stack cookie
+
+							// Set up intrinsic arguments
+							std::vector<Value *> args;
+
+							args.push_back(tr_hi);
+							args.push_back(tr_lo);
+							ArrayRef<Value *> args_ref(args);
+
+							// Create call to intrinsic
+							IRBuilder<> Builder(I);
+							Builder.SetInsertPoint(I);
+							Builder.CreateCall(val, args_ref,"");
+
+							Type *loadtype = op->getType();
+							Type *loadptrtype = loadtype->getPointerTo();
+
+							IntToPtrInst *ptr = new IntToPtrInst(tr_lo,loadptrtype,"ptr",op);
+
+							op->setOperand(0,ptr);
+
+						}
+
+						else if (auto *op = dyn_cast<GetElementPtrInst>(I))
+						{
+							modified=true;
+							Value *offset = resolveGetElementPtr(op,D,Ctx);
+							errs()<<"\n-----------\n"<<*offset<<"\n-----------\n";
+
+							ZExtInst *zext_binop = new ZExtInst(offset, Type::getInt128Ty(Ctx), "zextarrayidx", op);
+							BinaryOperator *binop =  BinaryOperator::Create(Instruction::Add, op->getOperand(0), zext_binop , "arrayidx", op);
+							
+							std::stack <User *> users;
+							std::stack <int> pos;
+
+							for (auto &U : op->uses())
+							{
+								User *user = U.getUser();
+								users.push(user);
+								pos.push(U.getOperandNo());
+							}
+
+							while(users.size())
+							{
+						    	User *u = users.top();
+						    	users.pop();
+						    	int index = pos.top();
+						    	pos.pop();
+						    	u->setOperand(index, binop);	
+						    }
+
+						    --i;
+						    op->dropAllReferences();
+						    op->removeFromParent();
+						}
+
 					}
 				}
 				/*errs()<<"\n*************************************************\n";
@@ -341,6 +342,7 @@ namespace {
 			Module::FunctionListType &functions = M.getFunctionList();
 			std::stack< Function * > to_replace_functions;
 			std::stack< Function * > replace_with_functions;
+			std::stack< int > argCount;
 
 			for (Module::FunctionListType::iterator it = functions.begin(), it_end = functions.end(); it != it_end; ++it)
 			{
@@ -354,9 +356,12 @@ namespace {
 				bool fnHasPtr = false;
 				fnHasPtr = (func.getReturnType()->isPointerTy() ? true : false);
 
+				int arg_index = 0;
+
 				Type *fRetType = (func.getReturnType()->isPointerTy() ? Type::getInt128Ty(Ctx) : func.getReturnType());
 				for(FunctionType::param_iterator k = (func.getFunctionType())->param_begin(), endp = (func.getFunctionType())->param_end(); k != endp; ++k)
 				{
+					arg_index++;
 					if((*k)->isPointerTy())
 					{
 						//j->mutateType(Type::getInt128Ty(Ctx));
@@ -376,15 +381,18 @@ namespace {
 				NF->getBasicBlockList().splice(NF->begin(), func.getBasicBlockList());
 				to_replace_functions.push(&func);
 				replace_with_functions.push(NF);
+				argCount.push(arg_index);
 			}
 
 			while(!to_replace_functions.empty())
 			{
 				Function *funcx = to_replace_functions.top();
 				Function *funcy = replace_with_functions.top();
+				int arg_index = argCount.top();
 				//errs()<<"\nto replace: "<<*funcx<<"\n";
 				to_replace_functions.pop();
 				replace_with_functions.pop();
+				argCount.pop();
 				M.getFunctionList().push_back(funcy);
 				while (!funcx->use_empty()) {
 					//errs()<<"USER:\n"<<*(funcx->user_back())<<"\n";
@@ -406,6 +414,17 @@ namespace {
 					}
 					new_call->takeName(call);
 					call->eraseFromParent();
+				}
+
+				Function::arg_iterator arg_i2 = funcy->arg_begin();
+
+				for(Function::arg_iterator arg_i = funcx->arg_begin(), 
+					arg_e = funcx->arg_end(); arg_i != arg_e; ++arg_i)
+				{
+					arg_i->replaceAllUsesWith(arg_i2);
+					arg_i2->takeName(arg_i);
+					++arg_i2;
+					arg_index++;
 				}
 			}
 
