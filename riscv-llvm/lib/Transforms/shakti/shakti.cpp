@@ -256,6 +256,11 @@ namespace {
 							Builder.CreateCall(val, args_ref,"");
 
 							Type *storetype = op->getOperand(0)->getType();
+							if (storetype->isPointerTy())
+							{
+								storetype = Type::getInt128Ty(Ctx);
+								op->mutateType(storetype);
+							}
 							Type *storeptrtype = storetype->getPointerTo();
 
 							IntToPtrInst *ptr = new IntToPtrInst(tr_lo,storeptrtype,"ptr",op);
