@@ -323,6 +323,7 @@ namespace {
 							std::stack <User *> users;
 							std::stack <int> pos;
 
+
 							for (auto &U : op->uses())
 							{
 								User *user = U.getUser();
@@ -342,6 +343,18 @@ namespace {
 						    --i;
 						    op->dropAllReferences();
 						    op->removeFromParent();
+						}
+						else if (auto *op = dyn_cast<BitCastInst>(I))
+						{
+							//errs()<<"\n-----------\n"<<*(op->getSrcTy())<<", "<<*(op->getDestTy())<<"\n-----------\n";
+							if(op->getSrcTy() == Type::getInt128Ty(Ctx) && op->getDestTy()->isPointerTy())
+							{
+								//errs()<<"\n-----------\n"<<*(op->getSrcTy())<<", "<<*(op->getDestTy())<<"\n-----------\n";
+								op->replaceAllUsesWith(op->getOperand(0));
+								--i;
+								op->dropAllReferences();
+								op->removeFromParent();
+							}
 						}
 
 					}
