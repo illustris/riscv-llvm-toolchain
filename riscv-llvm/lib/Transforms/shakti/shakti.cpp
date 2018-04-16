@@ -323,8 +323,9 @@ namespace {
 							std::stack <User *> users;
 							std::stack <int> pos;
 
+							op->replaceAllUsesWith(binop);
 
-							for (auto &U : op->uses())
+							/*for (auto &U : op->uses())
 							{
 								User *user = U.getUser();
 								users.push(user);
@@ -338,7 +339,7 @@ namespace {
 						    	int index = pos.top();
 						    	pos.pop();
 						    	u->setOperand(index, binop);	
-						    }
+						    }*/
 
 						    --i;
 						    op->dropAllReferences();
