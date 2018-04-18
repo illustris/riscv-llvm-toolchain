@@ -69,14 +69,18 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 }
 
 namespace {
-	struct cookiePass : public ModulePass
+	struct shaktiPass : public ModulePass
 	{
 		static char ID;
-		cookiePass() : ModulePass(ID) {}
+		shaktiPass() : ModulePass(ID) {}
 
 		virtual bool runOnModule(Module &M)
 		{
 			bool modified=false;
+
+			// First pass replaces malloc and free
+			Value *mallocFunc;
+			Value *freeFunc;
 
 			for (auto &F : M)
 			{
@@ -102,9 +106,9 @@ namespace {
 				FunctionType *freeFuncType = FunctionType::get(freeRetType, freeParamTypes, false);
 				FunctionType *safeFreeFuncType = FunctionType::get(safeFreeRetType, safeFreeParamTypes, false);
 				// Get function pointer for malloc
-				Value *mallocFunc = F.getParent()->getOrInsertFunction("malloc", mallocFuncType);
+				mallocFunc = F.getParent()->getOrInsertFunction("malloc", mallocFuncType);
 				// Get function pointer for free
-				Value *freeFunc = F.getParent()->getOrInsertFunction("free", freeFuncType);
+				freeFunc = F.getParent()->getOrInsertFunction("free", freeFuncType);
 				// Make safemalloc declaration, get pointer to it
 				Value *safemallocFunc = F.getParent()->getOrInsertFunction("safemalloc", safeMallocFuncType);
 				// Make safefree declaration, get pointer to it
@@ -122,26 +126,28 @@ namespace {
 							// If call invokes malloc
 							if((op->getCalledValue()) == (mallocFunc))
 							{
-								/*errs()<<"\n----------------\nReplacing:\n";
-								op->print(llvm::errs(), NULL);
-								errs()<<"\nwith:\n";//*/
+								//errs()<<"\n----------------\nReplacing:\n";
+								//op->print(llvm::errs(), NULL);
+								//errs()<<"\nwith:\n";
 								// Replace malloc with safemalloc in call
 								op->setCalledFunction (safemallocFunc);
 								op->mutateType(Type::getInt128Ty(Ctx));
-								/*op->print(llvm::errs(), NULL);
-								errs()<<"\n----------------\n";//*/
+								//op->print(llvm::errs(), NULL);
+								//errs()<<"\n----------------\n";
+
 								// Set flag if modified
 								modified=true;
 							}
 							else if((op->getCalledValue()) == (freeFunc))
 							{
-								/*errs()<<"\n----------------\nReplacing:\n";
-								op->print(llvm::errs(), NULL);
-								errs()<<"\nwith:\n";//*/
+								//errs()<<"\n----------------\nReplacing:\n";
+								//op->print(llvm::errs(), NULL);
+								//errs()<<"\nwith:\n";
 								// Replace free with safefree in call
 								op->setCalledFunction (safefreeFunc);
-								/*op->print(llvm::errs(), NULL);
-								errs()<<"\n----------------\n";//*/
+								//op->print(llvm::errs(), NULL);
+								//errs()<<"\n----------------\n";
+
 								// Set flag if modified
 								modified=true;
 							}
@@ -149,8 +155,12 @@ namespace {
 					}
 				}
 			}
+			dyn_cast<Function>(mallocFunc)->dropAllReferences();
+			dyn_cast<Function>(freeFunc)->dropAllReferences();
+			dyn_cast<Function>(mallocFunc)->removeFromParent();
+			dyn_cast<Function>(freeFunc)->removeFromParent();//*/
 
-			// First pass adds stack cookie
+			// Second pass adds stack cookie
 			for (auto &F : M)
 			{
 				LLVMContext &Ctx = F.getContext();
@@ -195,7 +205,7 @@ namespace {
 				}
 			}
 
-			// Second pass replaces pointers, store and load
+			// Third pass replaces pointers, store and load
 			for (auto &F : M)
 			{
 				DataLayout *D = new DataLayout(&M);
@@ -206,6 +216,9 @@ namespace {
 				FunctionType *craftFuncType = FunctionType::get(craftRetType, craftParamTypes, false);
 				Value *craftFunc = F.getParent()->getOrInsertFunction("craft", craftFuncType);
 				CallInst *st_hash;
+
+				if(F.isDeclaration())
+					continue;
 
 				for(Function::arg_iterator j = F.arg_begin(), end = F.arg_end(); j != end; ++j)
 				{
@@ -429,14 +442,59 @@ namespace {
 							op->removeFromParent();
 							//}
 						}
+						else if (auto *op = dyn_cast<CallInst>(I))
+						{
+							if(!(op->getCalledFunction()->isDeclaration()))
+								continue;
+							//errs()<<"\n*************************************************\n";
+							//errs()<<(op->getCalledFunction()->getName())<<"\n";
+							for(int i=0;i<op->getNumOperands()-1;i++)
+							{
+								if(!op->getOperand(i)->getName().contains("arrayidx") && !op->getOperand(i)->getName().contains("fpr"))
+								{
+									//errs()<<"op "<<i<<".\t"<<*op->getOperand(i)->getType()<<"\n";
+									continue;
+								}
+
+								TruncInst *tr_lo = new TruncInst(op->getOperand(i), Type::getInt64Ty(Ctx),"fpr_low", op);	// alloca stack cookie
+								Value* shamt = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),64);
+								BinaryOperator *shifted =  BinaryOperator::Create(Instruction::LShr, op->getOperand(i), shamt , "fpr_hi_big", op);
+								TruncInst *tr_hi = new TruncInst(shifted, Type::getInt64Ty(Ctx),"fpr_hi", op);	// alloca stack cookie
+
+								// Set up intrinsic arguments
+								std::vector<Value *> args;
+
+								args.push_back(tr_hi);
+								args.push_back(tr_lo);
+								ArrayRef<Value *> args_ref(args);
+
+								// Create call to intrinsic
+								IRBuilder<> Builder(I);
+								Builder.SetInsertPoint(I);
+								Builder.CreateCall(val, args_ref,"");
+
+								//errs()<<*op<<"\n";
+								Type *ptype = Type::getInt8PtrTy(Ctx);
+								//errs()<<i<<".\t"<<*ptype<<"\n";
+
+								IntToPtrInst *ptr = new IntToPtrInst(tr_lo,ptype,"ptr",op);
+
+								op->setOperand(i,ptr);
+								op->getOperand(i)->mutateType(ptype);
+								//errs()<<*op<<"\n";
+								//errs()<<*(op->getOperand(i)->getType())<<"\n";
+							}
+							//errs()<<"\n=************************************************\n";//*/
+						}
 
 					}
 				}
-				/*errs()<<"\n*************************************************\n";
-				errs()<<F;
-				errs()<<"\n*************************************************\n";//*/
+				//errs()<<"\n*************************************************\n";
+				//errs()<<F;
+				//errs()<<"\n*************************************************\n";
 			}
 
+			// Fourth pass Fixes argument types in function calls within the module
 			Module::FunctionListType &functions = M.getFunctionList();
 			std::stack< Function * > to_replace_functions;
 			std::stack< Function * > replace_with_functions;
@@ -448,8 +506,11 @@ namespace {
 				Function &func = *it;
 
 				LLVMContext &Ctx = func.getContext();
-				if(func.getName() == "llvm.RISCV.hash")
+				if(func.isDeclaration())
+				{
+					//errs()<<"\n*****\n"<<func<<"\n*****\n";
 					continue;
+				}
 
 				std::vector<Type*> fParamTypes;
 				bool fnHasPtr = false;
@@ -513,7 +574,7 @@ namespace {
 					}
 					new_call->takeName(call);
 					call->eraseFromParent();
-				}//*/
+				}//
 
 				Function::arg_iterator arg_i2 = funcy->arg_begin();
 
@@ -526,61 +587,12 @@ namespace {
 					arg_index++;
 				}
 
-				/*errs()<<"\n*************************************************\n";
-				errs()<<funcy->getName()<<"\n-----\n"<<*(funcy->getFunctionType());
-				errs()<<"\n*************************************************\n";//*/
+				//errs()<<"\n*************************************************\n";
+				//errs()<<funcy->getName()<<"\n-----\n"<<*(funcy->getFunctionType());
+				//errs()<<"\n*************************************************\n";
 				funcx->dropAllReferences();
 				funcx->removeFromParent();
 			}
-
-			/*std::vector<Function*> origF;
-			std::vector<Function*> repwithF;
-			for (auto &F : M)
-			{
-				LLVMContext &Ctx = F.getContext();
-				bool fnHasPtr = false;
-				std::vector<Type*> fParamTypes;
-				fnHasPtr = (F.getReturnType()->isPointerTy() ? true : false);
-
-				Type *fRetType = (F.getReturnType()->isPointerTy() ? Type::getInt128Ty(Ctx) : F.getReturnType());
-
-				for(FunctionType::param_iterator k = (F.getFunctionType())->param_begin(), endp = (F.getFunctionType())->param_end(); k != endp; ++k)
-				{
-					if((*k)->isPointerTy() && F.getName() != "llvm.RISCV.hash")
-					{
-						//j->mutateType(Type::getInt128Ty(Ctx));
-						fnHasPtr = true;
-						fParamTypes.push_back(Type::getInt128Ty(Ctx));
-						//errs()<<**k<<"\n";
-					}
-					else
-						fParamTypes.push_back(*k);
-					//errs()<<"\npushed "<<*(fParamTypes.back());
-				}
-
-				if(fnHasPtr)
-				{
-					//errs()<<"--------------\nOld function:\n"<<F<<"\n----------------";
-					FunctionType *fType = FunctionType::get(fRetType, fParamTypes, F.getFunctionType()->isVarArg());
-					Function *NF = Function::Create(fType, F.getLinkage(), F.getName());
-					NF->copyAttributesFrom(&F);
-					NF->getBasicBlockList().splice(NF->begin(), F.getBasicBlockList());
-					F.getParent()->getFunctionList().insert((&F), (&(*NF)));
-					NF->takeName(&F);
-					//F.replaceAllUsesWith(NF);
-					//errs()<<"\nNew function: \n"<<*(NF)<<"\n--------------\n";
-				}
-			}//*/
-
-			/*for (auto &F : M)
-				for (auto &B : F)
-					for (auto &I : B)
-					{
-						if (auto *op = dyn_cast<CallInst>(&I))
-						{
-							errs()<<"\n--------------\nFound callinst\n"<<*op<<"\n";
-						}
-					}//*/
 
 			//errs()<<"\n--------------\n"<<M<<"\n----------------\n";
 			return modified;
@@ -588,5 +600,5 @@ namespace {
 	};
 }
 
-char cookiePass::ID = 0;
-static RegisterPass<cookiePass> X("t", "Shakti-T transforms");
+char shaktiPass::ID = 0;
+static RegisterPass<shaktiPass> X("t", "Shakti-T transforms");
