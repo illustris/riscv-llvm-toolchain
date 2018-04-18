@@ -78,6 +78,78 @@ namespace {
 		{
 			bool modified=false;
 
+			for (auto &F : M)
+			{
+				modified=false;
+				// Get the safemalloc function to call from the new library.
+				LLVMContext &Ctx = F.getContext();
+				// Malloc arg is just one unsigned long
+				std::vector<Type*> mallocParamTypes = {Type::getInt64Ty(Ctx)};
+				std::vector<Type*> safeMallocParamTypes = {Type::getInt64Ty(Ctx)};
+				// Free arg is i8*
+				std::vector<Type*> freeParamTypes = {Type::getInt8PtrTy(Ctx)};
+				std::vector<Type*> safeFreeParamTypes = {Type::getInt128Ty(Ctx)};
+				// Return type of malloc is i8*
+				Type *mallocRetType = Type::getInt8PtrTy(Ctx);
+				Type *safeMallocRetType = Type::getInt128Ty(Ctx);
+				// Return type of free is void
+				Type *freeRetType = Type::getVoidTy(Ctx);
+				Type *safeFreeRetType = Type::getVoidTy(Ctx);
+				// Put everything together to make function type i8*(i64)
+				FunctionType *mallocFuncType = FunctionType::get(mallocRetType, mallocParamTypes, false);
+				FunctionType *safeMallocFuncType = FunctionType::get(safeMallocRetType, safeMallocParamTypes, false);
+				// Put everything together to make function type void*(i8*)
+				FunctionType *freeFuncType = FunctionType::get(freeRetType, freeParamTypes, false);
+				FunctionType *safeFreeFuncType = FunctionType::get(safeFreeRetType, safeFreeParamTypes, false);
+				// Get function pointer for malloc
+				Value *mallocFunc = F.getParent()->getOrInsertFunction("malloc", mallocFuncType);
+				// Get function pointer for free
+				Value *freeFunc = F.getParent()->getOrInsertFunction("free", freeFuncType);
+				// Make safemalloc declaration, get pointer to it
+				Value *safemallocFunc = F.getParent()->getOrInsertFunction("safemalloc", safeMallocFuncType);
+				// Make safefree declaration, get pointer to it
+				Value *safefreeFunc = F.getParent()->getOrInsertFunction("safefree", safeFreeFuncType);
+
+				// Iterate over BBs in F
+				for (auto &B : F)
+				{
+					// Iterate over Instrs in BB
+					for (auto &I : B)
+					{
+						// If instruction is of type call
+						if (auto *op = dyn_cast<CallInst>(&I))
+						{
+							// If call invokes malloc
+							if((op->getCalledValue()) == (mallocFunc))
+							{
+								/*errs()<<"\n----------------\nReplacing:\n";
+								op->print(llvm::errs(), NULL);
+								errs()<<"\nwith:\n";//*/
+								// Replace malloc with safemalloc in call
+								op->setCalledFunction (safemallocFunc);
+								op->mutateType(Type::getInt128Ty(Ctx));
+								/*op->print(llvm::errs(), NULL);
+								errs()<<"\n----------------\n";//*/
+								// Set flag if modified
+								modified=true;
+							}
+							else if((op->getCalledValue()) == (freeFunc))
+							{
+								/*errs()<<"\n----------------\nReplacing:\n";
+								op->print(llvm::errs(), NULL);
+								errs()<<"\nwith:\n";//*/
+								// Replace free with safefree in call
+								op->setCalledFunction (safefreeFunc);
+								/*op->print(llvm::errs(), NULL);
+								errs()<<"\n----------------\n";//*/
+								// Set flag if modified
+								modified=true;
+							}
+						}
+					}
+				}
+			}
+
 			// First pass adds stack cookie
 			for (auto &F : M)
 			{
@@ -173,7 +245,7 @@ namespace {
 									User *user = U.getUser();
 									users.push(user);
 									pos.push(U.getOperandNo());
-							    }*/
+								}*/
 							}
 
 							if (op->getName() == "stack_cookie")
@@ -222,16 +294,16 @@ namespace {
 								User *user = U.getUser();
 								users.push(user);
 								pos.push(U.getOperandNo());
-						    }
+							}
 
-						    while(users.size())
-						    {
-						    	User *u = users.top();
-						    	users.pop();
-						    	int index = pos.top();
-						    	pos.pop();
-						    	u->setOperand(index, fpr);	
-						    }
+							while(users.size())
+							{
+								User *u = users.top();
+								users.pop();
+								int index = pos.top();
+								pos.pop();
+								u->setOperand(index, fpr);	
+							}
 						}
 
 						else if (auto *op = dyn_cast<StoreInst>(I)) {
@@ -269,7 +341,7 @@ namespace {
 
 							--i;
 							op->dropAllReferences();
-						    op->removeFromParent();
+							op->removeFromParent();
 
 						}
 
@@ -334,28 +406,28 @@ namespace {
 
 							while(users.size())
 							{
-						    	User *u = users.top();
-						    	users.pop();
-						    	int index = pos.top();
-						    	pos.pop();
-						    	u->setOperand(index, binop);	
-						    }*/
+								User *u = users.top();
+								users.pop();
+								int index = pos.top();
+								pos.pop();
+								u->setOperand(index, binop);	
+							}*/
 
-						    --i;
-						    op->dropAllReferences();
-						    op->removeFromParent();
+							--i;
+							op->dropAllReferences();
+							op->removeFromParent();
 						}
 						else if (auto *op = dyn_cast<BitCastInst>(I))
 						{
 							//errs()<<"\n-----------\n"<<*(op->getSrcTy())<<", "<<*(op->getDestTy())<<"\n-----------\n";
-							if(op->getSrcTy() == Type::getInt128Ty(Ctx) && op->getDestTy()->isPointerTy())
-							{
+							//if(op->getSrcTy() == Type::getInt128Ty(Ctx) && op->getDestTy()->isPointerTy())
+							//{
 								//errs()<<"\n-----------\n"<<*(op->getSrcTy())<<", "<<*(op->getDestTy())<<"\n-----------\n";
-								op->replaceAllUsesWith(op->getOperand(0));
-								--i;
-								op->dropAllReferences();
-								op->removeFromParent();
-							}
+							op->replaceAllUsesWith(op->getOperand(0));
+							--i;
+							op->dropAllReferences();
+							op->removeFromParent();
+							//}
 						}
 
 					}
@@ -434,9 +506,9 @@ namespace {
 					ci->setAttributes(call_attr);
 					if (ci->isTailCall())
 						ci->setTailCall();
-                    new_call->setDebugLoc(call->getDebugLoc());
-                    if (!call->use_empty())
-                    {
+					new_call->setDebugLoc(call->getDebugLoc());
+					if (!call->use_empty())
+					{
 						call->replaceAllUsesWith(new_call);
 					}
 					new_call->takeName(call);
