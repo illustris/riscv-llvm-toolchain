@@ -40,9 +40,38 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 	}
 	else if(ArrayType *t = dyn_cast<ArrayType>(type))
 	{
+		ArrayType *rec = t;
+		ArrayType *rec_old = t;
+		//errs()<<0<<": "<<*rec<<"\n";
+		int depth=1;
+		std::stack <int> sizes;
+		sizes.push(t->getArrayNumElements());
+		while(rec = dyn_cast<ArrayType>(rec->getElementType()))
+		{
+			//errs()<<depth<<": "<<*rec<<"\n";
+			sizes.push(rec->getArrayNumElements());
+			rec_old = rec;
+			depth++;
+		}
+
+		Type *baseTy = rec_old->getElementType();
+
+		Type *gelType = Type::getInt128Ty(Context);
+		while(depth)
+		{
+			int sz = sizes.top();
+			sizes.pop();
+			gelType = ArrayType::get(gelType,sz);
+			depth--;
+		}
+
+		//errs()<<depth<<": "<<*gelType<<"\n";
+
 		if(!isconstant)
 		{
-			temp= llvm::ConstantInt::get(Type::getInt64Ty(Context), D->getTypeAllocSize(t->getElementType()));
+			//errs()<<"\n------\n"<<*GI<<"\n";
+			temp= llvm::ConstantInt::get(Type::getInt64Ty(Context), D->getTypeAllocSize(baseTy->isPointerTy()?Type::getInt128Ty(Context):baseTy));
+			//errs()<<*t->getElementType()<<"\n"<<D->getTypeAllocSize(t->getElementType())<<"\n";
 			IRBuilder<> builder(GI);
 			Offset = builder.CreateBinOp(Instruction::Mul,Offset, temp, "tmp");
 		}
@@ -260,6 +289,42 @@ namespace {
 									pos.push(U.getOperandNo());
 								}*/
 							}
+							else if(op->getAllocatedType()->isArrayTy())
+							{
+								ArrayType *t = dyn_cast<ArrayType>(op->getAllocatedType());
+								ArrayType *rec = t;
+								ArrayType *rec_old = t;
+								int depth=1;
+								std::stack <int> sizes;
+								sizes.push(t->getArrayNumElements());
+								while(rec = dyn_cast<ArrayType>(rec->getElementType()))
+								{
+									//errs()<<depth<<": "<<*rec<<"\n";
+									sizes.push(rec->getArrayNumElements());
+									rec_old = rec;
+									depth++;
+								}
+
+								Type *baseTy = rec_old->getElementType();
+
+								Type *gelType = Type::getInt128Ty(Ctx);
+								while(depth)
+								{
+									int sz = sizes.top();
+									sizes.pop();
+									gelType = ArrayType::get(gelType,sz);
+									depth--;
+								}
+
+								if(baseTy->isPointerTy())
+								{
+									//errs()<<"\n*********\nALLOCATED TYPE = "<<*op->getAllocatedType()->getArrayElementType()<<"\n\n";
+									//errs()<<*(ArrayType::get(Type::getInt128Ty(Ctx),op->getAllocatedType()->getArrayNumElements()))<<"\n";
+									op->setAllocatedType(gelType);
+									op->mutateType(gelType->getPointerTo());
+
+								}
+							}
 
 							if (op->getName() == "stack_cookie")
 							{
@@ -348,7 +413,9 @@ namespace {
 							}
 							Type *storeptrtype = storetype->getPointerTo();
 
-							IntToPtrInst *ptr = new IntToPtrInst(tr_lo,storeptrtype,"ptr",op);
+							Value* mask = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0x7fffffff);
+							BinaryOperator *ptr32 =  BinaryOperator::Create(Instruction::And, tr_lo, mask , "ptr32", op);
+							IntToPtrInst *ptr = new IntToPtrInst(ptr32,storeptrtype,"ptr",op);
 
 							new StoreInst(op->getOperand(0),ptr,op);
 
@@ -389,7 +456,10 @@ namespace {
 							}
 							Type *loadptrtype = loadtype->getPointerTo();
 
-							IntToPtrInst *ptr = new IntToPtrInst(tr_lo,loadptrtype,"ptr",op);
+							Value* mask = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0x7fffffff);
+							BinaryOperator *ptr32 =  BinaryOperator::Create(Instruction::And, tr_lo, mask , "ptr32", op);
+							//IntToPtrInst *ptr = new IntToPtrInst(ptr32,storeptrtype,"ptr",op);
+							IntToPtrInst *ptr = new IntToPtrInst(ptr32,loadptrtype,"ptr",op);
 
 							op->setOperand(0,ptr);
 							//errs()<<"\n=========\n"<<*ptr<<"\n-------\n"<<*op<<"\n-------\n"<<*loadtype<<"\n=========\n";
@@ -399,8 +469,8 @@ namespace {
 						else if (auto *op = dyn_cast<GetElementPtrInst>(I))
 						{
 							modified=true;
+							//errs()<<"\n-----------\n"<<*op<<"\n-----------\n";
 							Value *offset = resolveGetElementPtr(op,D,Ctx);
-							//errs()<<"\n-----------\n"<<*offset<<"\n-----------\n";
 
 							ZExtInst *zext_binop = new ZExtInst(offset, Type::getInt128Ty(Ctx), "zextarrayidx", op);
 							BinaryOperator *binop =  BinaryOperator::Create(Instruction::Add, op->getOperand(0), zext_binop , "arrayidx", op);
@@ -444,10 +514,12 @@ namespace {
 						}
 						else if (auto *op = dyn_cast<CallInst>(I))
 						{
-							if(!(op->getCalledFunction()->isDeclaration()))
+							if(!(op->getCalledFunction()->isDeclaration())) // skip if definition exists in module
+								continue;
+							if(op->getCalledFunction()->getName().contains("safefree"))
 								continue;
 							//errs()<<"\n*************************************************\n";
-							//errs()<<(op->getCalledFunction()->getName())<<"\n";
+							//errs()<<*op<<"\n";
 							for(int i=0;i<op->getNumOperands()-1;i++)
 							{
 								if(!op->getOperand(i)->getName().contains("arrayidx") && !op->getOperand(i)->getName().contains("fpr"))
@@ -477,7 +549,10 @@ namespace {
 								Type *ptype = Type::getInt8PtrTy(Ctx);
 								//errs()<<i<<".\t"<<*ptype<<"\n";
 
-								IntToPtrInst *ptr = new IntToPtrInst(tr_lo,ptype,"ptr",op);
+								Value* mask = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0x7fffffff);
+								BinaryOperator *ptr32 =  BinaryOperator::Create(Instruction::And, tr_lo, mask , "ptr32", op);
+
+								IntToPtrInst *ptr = new IntToPtrInst(ptr32,ptype,"ptr",op);
 
 								op->setOperand(i,ptr);
 								op->getOperand(i)->mutateType(ptype);
