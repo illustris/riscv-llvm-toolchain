@@ -184,6 +184,7 @@ namespace {
 					}
 				}
 			}
+
 			dyn_cast<Function>(mallocFunc)->dropAllReferences();
 			dyn_cast<Function>(freeFunc)->dropAllReferences();
 			dyn_cast<Function>(mallocFunc)->removeFromParent();
@@ -514,10 +515,16 @@ namespace {
 						}
 						else if (auto *op = dyn_cast<CallInst>(I))
 						{
-							if(!(op->getCalledFunction()->isDeclaration())) // skip if definition exists in module
-								continue;
-							if(op->getCalledFunction()->getName().contains("safefree"))
-								continue;
+							//errs()<<*op<<"\n";
+							//errs()<<op->getCalledFunction();
+							//errs()<<"\n";
+							if(op->getCalledFunction() != NULL)
+							{
+								if(!(op->getCalledFunction()->isDeclaration())) // skip if definition exists in module
+									continue;
+								if(op->getCalledFunction()->getName().contains("safefree"))
+									continue;
+							}
 							//errs()<<"\n*************************************************\n";
 							//errs()<<*op<<"\n";
 							for(int i=0;i<op->getNumOperands()-1;i++)
@@ -561,6 +568,8 @@ namespace {
 							}
 							//errs()<<"\n=************************************************\n";//*/
 						}
+						//errs()<<*I;
+						//errs()<<"\n--------\n";
 
 					}
 				}
