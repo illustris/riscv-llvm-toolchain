@@ -189,7 +189,7 @@ namespace {
 					}
 				}
 			}
-			errs()<<"First pass done\n";
+			//errs()<<"First pass done\n";
 
 			dyn_cast<Function>(mallocFunc)->dropAllReferences();
 			dyn_cast<Function>(freeFunc)->dropAllReferences();
@@ -243,7 +243,7 @@ namespace {
 						}
 				}
 			}
-			errs()<<"Second pass done\n";
+			//errs()<<"Second pass done\n";
 
 			// Third pass replaces pointers, store and load
 			for (auto &F : M)
@@ -412,6 +412,13 @@ namespace {
 						}
 
 						else if (auto *op = dyn_cast<StoreInst>(I)) {
+							if(dyn_cast<ConstantPointerNull>(op->getOperand(0)))
+							{
+								//op->getOperand(0)->mutateType(Type::getInt128Ty(Ctx));
+								Value* nullconst = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),0);
+								op->setOperand(0, nullconst);
+								//errs()<<"FOUND CONSTANT\n"<<*op->getOperand(0)<<"\n"<<op->getOperand(0)->getNumUses()<<"\n";
+							}
 							if(op->getOperand(1)->getType() != Type::getInt128Ty(Ctx))
 								continue;
 							modified = true;
@@ -633,7 +640,7 @@ namespace {
 				//errs()<<F;
 				//errs()<<"\n*************************************************\n";
 			}
-			errs()<<"Third pass done\n";
+			//errs()<<"Third pass done\n";
 
 			// Fourth pass Fixes argument types in function calls within the module
 			Module::FunctionListType &functions = M.getFunctionList();
@@ -763,7 +770,7 @@ namespace {
 				funcx->dropAllReferences();
 				funcx->removeFromParent();
 			}
-			errs()<<"Fourth pass done\n";
+			//errs()<<"Fourth pass done\n";
 
 			//errs()<<"\n--------------\n"<<M<<"\n----------------\n";
 			return modified;
