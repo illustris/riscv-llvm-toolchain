@@ -139,5 +139,10 @@ int main()
 	arrayFp[1] = f2;
 	printf("%d, %d\n",arrayFp[0](),arrayFp[1]());
 	printf("PASS\n");
+
+	printf("\n\n************\nTesting null pointer\n************\n");
+	int *np;
+	np = NULL;
+	printf("PASS\n");
 	return 0;
 }
