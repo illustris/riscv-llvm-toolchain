@@ -189,6 +189,7 @@ namespace {
 					}
 				}
 			}
+			errs()<<"First pass done\n";
 
 			dyn_cast<Function>(mallocFunc)->dropAllReferences();
 			dyn_cast<Function>(freeFunc)->dropAllReferences();
@@ -242,7 +243,7 @@ namespace {
 						}
 				}
 			}
-			//errs()<<"Second pass done\n";
+			errs()<<"Second pass done\n";
 
 			// Third pass replaces pointers, store and load
 			for (auto &F : M)
@@ -483,7 +484,7 @@ namespace {
 							if(dyn_cast<PointerType>(loadtype))
 							{
 								isFnArr = dyn_cast<PointerType>(loadtype)->getElementType()->isFunctionTy();
-								errs()<<"LOADTYPE: "<<*loadtype<<"IsFn: "<<isFnArr<<"\n";
+								//errs()<<"LOADTYPE: "<<*loadtype<<"IsFn: "<<isFnArr<<"\n";
 							}
 
 							if (loadtype->isPointerTy() && !(isFnArr))
@@ -566,22 +567,26 @@ namespace {
 							if(op->getCalledFunction() != NULL)
 							{
 								if(!(op->getCalledFunction()->isDeclaration())) // skip if definition exists in module
+								{
 									continue;
+								}
 								if(op->getCalledFunction()->getName().contains("safefree"))
+								{
 									continue;
+								}
 							}
 							//errs()<<"\n*************************************************\n";
 							//errs()<<*op<<"\n";
 							for(unsigned int i=0;i<op->getNumOperands()-1;i++)
 							{
 								//if(op->getCalledFunction()->getName() == "fprintf")
-								//	//errs()<<"op "<<i<<".\t"<<*op->getOperand(i)->getType()<<"\n";
+								//errs()<<"op "<<i<<".\t"<<*op->getOperand(i)<<"\n";
 								if(!op->getOperand(i)->getName().contains("arrayidx") && !op->getOperand(i)->getName().contains("fpr") && !op->getOperand(i)->getName().contains("fpld"))
 								{
 									continue;
 								}
 
-								TruncInst *tr_lo = new TruncInst(op->getOperand(i), Type::getInt64Ty(Ctx),"fpr_low", op);	// alloca stack cookie
+								TruncInst *tr_lo = new TruncInst(op->getOperand(i), Type::getInt64Ty(Ctx),"fpr_low", op);	// alloca stack cookie;
 								Value* shamt = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),64);
 								BinaryOperator *shifted =  BinaryOperator::Create(Instruction::LShr, op->getOperand(i), shamt , "fpr_hi_big", op);
 								TruncInst *tr_hi = new TruncInst(shifted, Type::getInt64Ty(Ctx),"fpr_hi", op);	// alloca stack cookie
@@ -600,10 +605,14 @@ namespace {
 
 								//errs()<<*op<<"\n";
 								Type *ptype;
-								if(!op->getCalledFunction()->isVarArg())
-									ptype = op->getCalledFunction()->getFunctionType()->params()[i];
+								if(op->getCalledFunction() != NULL)
+								{
+									if(!op->getCalledFunction()->isVarArg())
+										ptype = op->getCalledFunction()->getFunctionType()->params()[i];
+								}
 								else
 									ptype = Type::getInt8PtrTy(Ctx);
+
 								//errs()<<i<<".\t"<<*ptype<<"\n";
 
 								Value* mask = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0x7fffffff);
@@ -627,7 +636,7 @@ namespace {
 				//errs()<<F;
 				//errs()<<"\n*************************************************\n";
 			}
-			//errs()<<"Third pass done\n";
+			errs()<<"Third pass done\n";
 
 			// Fourth pass Fixes argument types in function calls within the module
 			Module::FunctionListType &functions = M.getFunctionList();
@@ -728,7 +737,7 @@ namespace {
 				funcx->dropAllReferences();
 				funcx->removeFromParent();
 			}
-			//errs()<<"Fourth pass done\n";
+			errs()<<"Fourth pass done\n";
 
 			//errs()<<"\n--------------\n"<<M<<"\n----------------\n";
 			return modified;
