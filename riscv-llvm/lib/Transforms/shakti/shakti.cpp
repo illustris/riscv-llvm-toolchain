@@ -46,7 +46,7 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 		int depth=1;
 		std::stack <int> sizes;
 		sizes.push(t->getArrayNumElements());
-		while(rec = dyn_cast<ArrayType>(rec->getElementType()))
+		while((rec = dyn_cast<ArrayType>(rec->getElementType())))
 		{
 			//errs()<<depth<<": "<<*rec<<"\n";
 			sizes.push(rec->getArrayNumElements());
@@ -234,6 +234,7 @@ namespace {
 						}
 				}
 			}
+			//errs()<<"Second pass done\n";
 
 			// Third pass replaces pointers, store and load
 			for (auto &F : M)
@@ -298,7 +299,7 @@ namespace {
 								int depth=1;
 								std::stack <int> sizes;
 								sizes.push(t->getArrayNumElements());
-								while(rec = dyn_cast<ArrayType>(rec->getElementType()))
+								while((rec = dyn_cast<ArrayType>(rec->getElementType())))
 								{
 									//errs()<<depth<<": "<<*rec<<"\n";
 									sizes.push(rec->getArrayNumElements());
@@ -463,6 +464,13 @@ namespace {
 							IntToPtrInst *ptr = new IntToPtrInst(ptr32,loadptrtype,"ptr",op);
 
 							op->setOperand(0,ptr);
+
+							//Tag the loaded value as fpld if a fatpointer was loaded
+							if(op->getType() == Type::getInt128Ty(Ctx))
+							{
+								//errs()<<"FPR:\n"<<*op<<"\n";
+								op->setName("fpld");
+							}
 							//errs()<<"\n=========\n"<<*ptr<<"\n-------\n"<<*op<<"\n-------\n"<<*loadtype<<"\n=========\n";
 
 						}
@@ -527,9 +535,9 @@ namespace {
 							}
 							//errs()<<"\n*************************************************\n";
 							//errs()<<*op<<"\n";
-							for(int i=0;i<op->getNumOperands()-1;i++)
+							for(unsigned int i=0;i<op->getNumOperands()-1;i++)
 							{
-								if(!op->getOperand(i)->getName().contains("arrayidx") && !op->getOperand(i)->getName().contains("fpr"))
+								if(!op->getOperand(i)->getName().contains("arrayidx") && !op->getOperand(i)->getName().contains("fpr") && !op->getOperand(i)->getName().contains("fpld"))
 								{
 									//errs()<<"op "<<i<<".\t"<<*op->getOperand(i)->getType()<<"\n";
 									continue;
@@ -553,7 +561,7 @@ namespace {
 								Builder.CreateCall(val, args_ref,"");
 
 								//errs()<<*op<<"\n";
-								Type *ptype = Type::getInt8PtrTy(Ctx);
+								Type *ptype = op->getCalledFunction()->getFunctionType()->params()[i];
 								//errs()<<i<<".\t"<<*ptype<<"\n";
 
 								Value* mask = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0x7fffffff);
@@ -577,6 +585,7 @@ namespace {
 				//errs()<<F;
 				//errs()<<"\n*************************************************\n";
 			}
+			//errs()<<"Third pass done\n";
 
 			// Fourth pass Fixes argument types in function calls within the module
 			Module::FunctionListType &functions = M.getFunctionList();
@@ -677,6 +686,7 @@ namespace {
 				funcx->dropAllReferences();
 				funcx->removeFromParent();
 			}
+			//errs()<<"Fourth pass done\n";
 
 			//errs()<<"\n--------------\n"<<M<<"\n----------------\n";
 			return modified;
