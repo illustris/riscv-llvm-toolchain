@@ -25,6 +25,15 @@ int cbr(int *ptr)
 	return *ptr;
 }
 
+int f1()
+{
+	return 8;
+}
+int f2()
+{
+	return 16;
+}
+
 int main()
 {
 
@@ -41,6 +50,7 @@ int main()
 	{
 		printf("x[%d] is: %d\n",i,x[i]);
 	}
+	printf("PASS\n");
 
 	printf("\n\n*****************\nTesting recursion\n*****************\n");
 	test();
@@ -122,5 +132,12 @@ int main()
 	}
 	printf("PASS\n");
 
+	printf("\n\n************\nTesting function pointer\n************\n");
+	typedef int (*functionPtr)();
+	functionPtr arrayFp[4];
+	arrayFp[0] = f1;
+	arrayFp[1] = f2;
+	printf("%d, %d\n",arrayFp[0](),arrayFp[1]());
+	printf("PASS\n");
 	return 0;
 }
