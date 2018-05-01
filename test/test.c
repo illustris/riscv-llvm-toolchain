@@ -27,10 +27,6 @@ int cbr(int *ptr)
 
 int main()
 {
-	//printf("\n\n**************\nTesting N-D malloc-free\n**************\n");
-	int *p[10][10];
-	//p[0][0] = malloc(40);
-	//free(p[0][0]);
 
 	printf("\n**********************\nTesting array on stack\n**********************\n");
 	//int a = 0x1ee7c0de;
@@ -48,6 +44,7 @@ int main()
 
 	printf("\n\n*****************\nTesting recursion\n*****************\n");
 	test();
+	printf("PASS\n");
 
 	printf("\n\n*******************\nTesting malloc-free\n*******************\n");
 	char *q = malloc(10);
@@ -55,6 +52,7 @@ int main()
 	printf("PASS\n");
 
 	printf("\n\n**************\nTesting malloc\n**************\n");
+	int *p[10][10];
 	for(int i=0;i<10;i++)
 	{
 		p[0][i] = malloc(40);
