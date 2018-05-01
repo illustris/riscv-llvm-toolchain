@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdio.h>
+#include "external.h"
 
 //void printptr(void *a);
 
@@ -17,6 +18,11 @@ void test(){
 	//fflush(stdout);
 	if(rec_count != 6)
 		test();
+}
+
+int cbr(int *ptr)
+{
+	return *ptr;
 }
 
 int main()
@@ -43,7 +49,7 @@ int main()
 	printf("\n\n*****************\nTesting recursion\n*****************\n");
 	test();
 
-	printf("\n\n**************\nTesting malloc-free\n**************\n");
+	printf("\n\n*******************\nTesting malloc-free\n*******************\n");
 	char *q = malloc(10);
 	free(q);
 	printf("PASS\n");
@@ -59,17 +65,62 @@ int main()
 			//printf("%d:\tp[%d] = %d\n",i,j,p[j]);
 			if(p[0][i][j] != 100*i+j)
 			{
-				printf("\n!!!!!!!VALUE STORED IN HEAP CLOBBERED!!!!!");
+				printf("\n!!!!!!!VALUE STORED IN HEAP CLOBBERED!!!!!\n");
 				exit(0);
 			}
 		}
 	}
 	printf("PASS\n");
 
+	printf("\n\n**************************\nTesting pointer to pointer\n**************************\n");
+	int *r;
+	for(int i=0;i<10;i++)
+	{
+		for(int j=0;j<10;j++)
+		{
+			r = p[0][i];
+			if(r[j] != 100*i+j)
+			{
+				printf("\n!!!!!!!UNEXPECTED VALUE AT (%d, %d, %d)!!!!!\n",0,i,j);
+				exit(0);
+			}
+		}
+	}
+	printf("PASS\n");
+
+
 	printf("\n\n************\nTesting free\n************\n");
 	for(int i=0;i<10;i++)
 	{
 		free(p[0][i]);
+	}
+	printf("PASS\n");
+
+	printf("\n\n***********************************************\nTesting call by reference to function in module\n***********************************************\n");
+	int n = 1337;
+	int *ptr = &n;
+	if(cbr(&n) != n)
+	{
+		printf("\n!!!!!!!UNEXPECTED VALUE RETURNED: %d!!!!!\nEXPECTED:%d\n",cbr(&n),n);
+		exit(0);
+	}
+	if(cbr(ptr) != n)
+	{
+		printf("\n!!!!!!!UNEXPECTED VALUE RETURNED: %d!!!!!\nEXPECTED:%d\n",cbr(ptr),n);
+		exit(0);
+	}
+	printf("PASS\n");
+
+	printf("\n\n****************************************************\nTesting call by reference to function outside module\n****************************************************\n");
+	if(cbr_ext(&n) != n)
+	{
+		printf("\n!!!!!!!UNEXPECTED VALUE RETURNED: %d!!!!!\nEXPECTED:%d\n",cbr_ext(&n),n);
+		exit(0);
+	}
+	if(cbr_ext(ptr) != n)
+	{
+		printf("\n!!!!!!!UNEXPECTED VALUE RETURNED: %d!!!!!\nEXPECTED:%d\n",cbr_ext(ptr),n);
+		exit(0);
 	}
 	printf("PASS\n");
 
