@@ -66,11 +66,16 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 		}
 
 		//errs()<<depth<<": "<<*gelType<<"\n";
+		bool isFnArr = 0;
+		if(dyn_cast<PointerType>(baseTy))
+		{
+			isFnArr = dyn_cast<PointerType>(baseTy)->getElementType()->isFunctionTy();
+		}
 
 		if(!isconstant)
 		{
 			//errs()<<"\n------\n"<<*GI<<"\n";
-			temp= llvm::ConstantInt::get(Type::getInt64Ty(Context), D->getTypeAllocSize(baseTy->isPointerTy()?Type::getInt128Ty(Context):baseTy));
+			temp= llvm::ConstantInt::get(Type::getInt64Ty(Context), D->getTypeAllocSize((baseTy->isPointerTy() && !isFnArr)?Type::getInt128Ty(Context):baseTy));
 			//errs()<<*t->getElementType()<<"\n"<<D->getTypeAllocSize(t->getElementType())<<"\n";
 			IRBuilder<> builder(GI);
 			Offset = builder.CreateBinOp(Instruction::Mul,Offset, temp, "tmp");
@@ -272,9 +277,16 @@ namespace {
 					for(BasicBlock::iterator i = B.begin(), e = B.end(); i != e; ++i)
 					{
 						Instruction *I = dyn_cast<Instruction>(i);
+						//errs()<<*I<<"\n";
 
 						if (auto *op = dyn_cast<AllocaInst>(I))
 						{
+							//errs()<<*op->getAllocatedType()<<"\n";
+							if(op->getAllocatedType()->isFunctionTy())
+							{
+								//errs()<<"Ignoring function pointer "<<*op<<"\n";
+								continue;
+							}
 							modified=true;
 							//errs()<<"\n-----------\nAlloca:\t"<<*op<<"\n-----------\n";
 							if(op->getAllocatedType()->isPointerTy())
@@ -322,7 +334,13 @@ namespace {
 									depth--;
 								}
 
-								if(baseTy->isPointerTy())
+								bool isFnArr = 0;
+								if(dyn_cast<PointerType>(baseTy))
+								{
+									//errs()<<"Found array: "<<*op<<", baseTy = "<<dyn_cast<PointerType>(baseTy)->getElementType()->isFunctionTy()<<"\n";
+									isFnArr = dyn_cast<PointerType>(baseTy)->getElementType()->isFunctionTy();
+								}
+								if(baseTy->isPointerTy() && !(isFnArr))	//Only do if array is ptr array, and not a fn ptr array
 								{
 									//errs()<<"\n*********\nALLOCATED TYPE = "<<*op->getAllocatedType()->getArrayElementType()<<"\n\n";
 									//errs()<<*(ArrayType::get(Type::getInt128Ty(Ctx),op->getAllocatedType()->getArrayNumElements()))<<"\n";
@@ -330,6 +348,7 @@ namespace {
 									op->mutateType(gelType->getPointerTo());
 
 								}
+								//errs()<<*op<<"\n";
 							}
 
 							if (op->getName() == "stack_cookie")
@@ -413,7 +432,12 @@ namespace {
 							Builder.CreateCall(val, args_ref,"");
 
 							Type *storetype = op->getOperand(0)->getType();
-							if (storetype->isPointerTy())
+							bool isFnArr = 0;
+							if(dyn_cast<PointerType>(storetype))
+							{
+								isFnArr = dyn_cast<PointerType>(storetype)->getElementType()->isFunctionTy();
+							}
+							if (storetype->isPointerTy() && !isFnArr)
 							{
 								storetype = Type::getInt128Ty(Ctx);
 								op->mutateType(storetype);
@@ -455,8 +479,14 @@ namespace {
 							Builder.CreateCall(val, args_ref,"");
 
 							Type *loadtype = op->getType();
+							bool isFnArr = 0;
+							if(dyn_cast<PointerType>(loadtype))
+							{
+								isFnArr = dyn_cast<PointerType>(loadtype)->getElementType()->isFunctionTy();
+								errs()<<"LOADTYPE: "<<*loadtype<<"IsFn: "<<isFnArr<<"\n";
+							}
 
-							if (loadtype->isPointerTy())
+							if (loadtype->isPointerTy() && !(isFnArr))
 							{
 								loadtype = Type::getInt128Ty(Ctx);
 								op->mutateType(loadtype);
@@ -516,20 +546,22 @@ namespace {
 						}
 						else if (auto *op = dyn_cast<BitCastInst>(I))
 						{
+							//errs()<<"BITCAST: "<<*op<<"\n";
 							//errs()<<"\n-----------\n"<<*(op->getSrcTy())<<", "<<*(op->getDestTy())<<"\n-----------\n";
 							//if(op->getSrcTy() == Type::getInt128Ty(Ctx) && op->getDestTy()->isPointerTy())
 							//{
 								//errs()<<"\n-----------\n"<<*(op->getSrcTy())<<", "<<*(op->getDestTy())<<"\n-----------\n";
-							op->replaceAllUsesWith(op->getOperand(0));
-							--i;
-							op->dropAllReferences();
-							op->removeFromParent();
-							//}
+							if(op->getOperand(0)->getType() == Type::getInt128Ty(Ctx))
+							{
+								op->replaceAllUsesWith(op->getOperand(0));
+								--i;
+								op->dropAllReferences();
+								op->removeFromParent();
+							}
 						}
 						else if (auto *op = dyn_cast<CallInst>(I))
 						{
 							//errs()<<*op<<"\n";
-							//errs()<<op->getCalledFunction();
 							//errs()<<"\n";
 							if(op->getCalledFunction() != NULL)
 							{
@@ -542,9 +574,10 @@ namespace {
 							//errs()<<*op<<"\n";
 							for(unsigned int i=0;i<op->getNumOperands()-1;i++)
 							{
+								//if(op->getCalledFunction()->getName() == "fprintf")
+								//	//errs()<<"op "<<i<<".\t"<<*op->getOperand(i)->getType()<<"\n";
 								if(!op->getOperand(i)->getName().contains("arrayidx") && !op->getOperand(i)->getName().contains("fpr") && !op->getOperand(i)->getName().contains("fpld"))
 								{
-									//errs()<<"op "<<i<<".\t"<<*op->getOperand(i)->getType()<<"\n";
 									continue;
 								}
 
@@ -566,7 +599,11 @@ namespace {
 								Builder.CreateCall(val, args_ref,"");
 
 								//errs()<<*op<<"\n";
-								Type *ptype = op->getCalledFunction()->getFunctionType()->params()[i];
+								Type *ptype;
+								if(!op->getCalledFunction()->isVarArg())
+									ptype = op->getCalledFunction()->getFunctionType()->params()[i];
+								else
+									ptype = Type::getInt8PtrTy(Ctx);
 								//errs()<<i<<".\t"<<*ptype<<"\n";
 
 								Value* mask = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0x7fffffff);
