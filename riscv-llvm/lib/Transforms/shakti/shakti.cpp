@@ -568,10 +568,12 @@ namespace {
 							{
 								if(!(op->getCalledFunction()->isDeclaration())) // skip if definition exists in module
 								{
+									//errs()<<"\n=************************************************\n";
 									continue;
 								}
 								if(op->getCalledFunction()->getName().contains("safefree"))
 								{
+									//errs()<<"\n=************************************************\n";
 									continue;
 								}
 							}
@@ -579,7 +581,7 @@ namespace {
 							for(unsigned int i=0;i<op->getNumOperands()-1;i++)
 							{
 								//if(op->getCalledFunction()->getName() == "fprintf")
-								//	errs()<<"op "<<i<<".\t"<<*op->getOperand(i)<<"\n";
+								//errs()<<"op "<<i<<".\t"<<*op->getOperand(i)<<"\n";
 								if(!op->getOperand(i)->getName().contains("arrayidx") && !op->getOperand(i)->getName().contains("fpr") && !op->getOperand(i)->getName().contains("fpld"))
 								{
 									continue;
@@ -657,11 +659,22 @@ namespace {
 
 				int arg_index = 0;
 
-				Type *fRetType = (func.getReturnType()->isPointerTy() ? Type::getInt128Ty(Ctx) : func.getReturnType());
+				bool isFnArr = 0;
+				if(dyn_cast<PointerType>(func.getReturnType()))
+				{
+					isFnArr = dyn_cast<PointerType>(func.getReturnType())->getElementType()->isFunctionTy();
+				}
+
+				Type *fRetType = (func.getReturnType()->isPointerTy() && !(isFnArr) ? Type::getInt128Ty(Ctx) : func.getReturnType());
 				for(FunctionType::param_iterator k = (func.getFunctionType())->param_begin(), endp = (func.getFunctionType())->param_end(); k != endp; ++k)
 				{
 					arg_index++;
-					if((*k)->isPointerTy())
+					bool argIsFnArr = 0;
+					if(dyn_cast<PointerType>(*k))
+					{
+						argIsFnArr = dyn_cast<PointerType>(*k)->getElementType()->isFunctionTy();
+					}
+					if((*k)->isPointerTy() && !argIsFnArr)
 					{
 						//j->mutateType(Type::getInt128Ty(Ctx));
 						fnHasPtr = true;
@@ -693,26 +706,44 @@ namespace {
 				replace_with_functions.pop();
 				argCount.pop();
 				M.getFunctionList().push_back(funcy);
-				while (!funcx->use_empty()) {
-					//errs()<<"USER:\n"<<*(funcx->user_back())<<"\n";
-					CallSite CS(funcx->user_back());
-					std::vector< Value * > args(CS.arg_begin(), CS.arg_end());
-					Instruction *call = CS.getInstruction();
-					Instruction *new_call = NULL;
-					const AttributeList &call_attr = CS.getAttributes();
-					new_call = CallInst::Create(funcy, args, "", call);
-					CallInst *ci = cast< CallInst >(new_call);
-					ci->setCallingConv(CS.getCallingConv());
-					ci->setAttributes(call_attr);
-					if (ci->isTailCall())
-						ci->setTailCall();
-					new_call->setDebugLoc(call->getDebugLoc());
-					if (!call->use_empty())
+				while (!funcx->use_empty())
+				{
+					if(dyn_cast<CallInst>(funcx->user_back()))
 					{
-						call->replaceAllUsesWith(new_call);
+						//errs()<<"USER:\n"<<*(funcx->user_back())<<"\n";
+						CallSite CS(funcx->user_back());
+						std::vector< Value * > args(CS.arg_begin(), CS.arg_end());
+						Instruction *call = CS.getInstruction();
+						Instruction *new_call = NULL;
+						const AttributeList &call_attr = CS.getAttributes();
+						new_call = CallInst::Create(funcy, args, "", call);
+						CallInst *ci = cast< CallInst >(new_call);
+						ci->setCallingConv(CS.getCallingConv());
+						ci->setAttributes(call_attr);
+						if (ci->isTailCall())
+							ci->setTailCall();
+						new_call->setDebugLoc(call->getDebugLoc());
+						if (!call->use_empty())
+						{
+							call->replaceAllUsesWith(new_call);
+						}
+						new_call->takeName(call);
+						call->eraseFromParent();
 					}
-					new_call->takeName(call);
-					call->eraseFromParent();
+					else if(dyn_cast<StoreInst>(funcx->user_back()))
+					{
+						StoreInst *op = dyn_cast<StoreInst>(funcx->user_back());
+						//errs()<<"USER:\n"<<*(funcx->user_back())<<"\n";
+						//errs()<<*funcy->getType()->getPointerTo()<<"\n";
+						dyn_cast<StoreInst>(funcx->user_back())->setOperand(0,funcy);
+						//errs()<<*op->getOperand(1)<<"\n";
+						IntToPtrInst *op2;
+						if((op2 = dyn_cast<IntToPtrInst>(op->getOperand(1))))
+						{
+							op2->mutateType(funcy->getType()->getPointerTo());
+						}
+						//errs()<<*op<<"\n";
+					}
 				}//
 
 				Function::arg_iterator arg_i2 = funcy->arg_begin();
