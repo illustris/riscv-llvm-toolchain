@@ -203,6 +203,8 @@ namespace {
 					{	// If BB is first
 						Instruction *I = &((&B)->front());	// Get first instruction in function
 						st_cook = new AllocaInst(Type::getInt64Ty(Ctx), 0,"stack_cookie", I);	// alloca stack cookie
+						new PtrToIntInst(st_cook,Type::getInt32Ty(Ctx), "stack_cookie_32", I);
+						//new TruncInst(st_cook_int, Type::getInt32Ty(Ctx),"stack_cookie_32", I);
 
 						// Set up intrinsic arguments
 						std::vector<Value *> args;
@@ -212,7 +214,8 @@ namespace {
 						// Create call to intrinsic
 						IRBuilder<> Builder(I);
 						Builder.SetInsertPoint(I);
-						Builder.CreateCall(hash, args_ref,"stack_hash");
+						Value *hash64 = Builder.CreateCall(hash, args_ref,"stack_hash_long");
+						new TruncInst(hash64, Type::getInt32Ty(Ctx),"stack_hash", I);
 						modified = true;
 
 					}
@@ -242,11 +245,12 @@ namespace {
 				DataLayout *D = new DataLayout(&M);
 
 				LLVMContext &Ctx = F.getContext();
-				std::vector<Type*> craftParamTypes = {Type::getInt32Ty(Ctx),Type::getInt32Ty(Ctx),Type::getInt32Ty(Ctx),Type::getInt64Ty(Ctx)};
+				std::vector<Type*> craftParamTypes = {Type::getInt32Ty(Ctx),Type::getInt32Ty(Ctx),Type::getInt32Ty(Ctx),Type::getInt32Ty(Ctx)};
 				Type *craftRetType = Type::getInt128Ty(Ctx);
 				FunctionType *craftFuncType = FunctionType::get(craftRetType, craftParamTypes, false);
 				Value *craftFunc = F.getParent()->getOrInsertFunction("craft", craftFuncType);
-				CallInst *st_hash;
+				TruncInst *st_hash;
+				PtrToIntInst *st_cook;
 
 				if(F.isDeclaration())
 					continue;
@@ -330,7 +334,8 @@ namespace {
 
 							if (op->getName() == "stack_cookie")
 							{
-								st_hash = dyn_cast<CallInst>(op->getNextNode());
+								st_cook = dyn_cast<PtrToIntInst>(op->getNextNode());
+								st_hash = dyn_cast<TruncInst>(op->getNextNode()->getNextNode()->getNextNode());
 								continue;
 							}
 
@@ -338,7 +343,7 @@ namespace {
 
 							std::vector<Value *> args;
 							args.push_back(trunc);
-							args.push_back(trunc);
+							args.push_back(st_cook);
 							if(dyn_cast<ConstantInt>(op->getArraySize()))
 								args.push_back(
 									llvm::ConstantInt::get(
