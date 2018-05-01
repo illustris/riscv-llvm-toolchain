@@ -575,12 +575,11 @@ namespace {
 									continue;
 								}
 							}
-							//errs()<<"\n*************************************************\n";
 							//errs()<<*op<<"\n";
 							for(unsigned int i=0;i<op->getNumOperands()-1;i++)
 							{
 								//if(op->getCalledFunction()->getName() == "fprintf")
-								//errs()<<"op "<<i<<".\t"<<*op->getOperand(i)<<"\n";
+								//	errs()<<"op "<<i<<".\t"<<*op->getOperand(i)<<"\n";
 								if(!op->getOperand(i)->getName().contains("arrayidx") && !op->getOperand(i)->getName().contains("fpr") && !op->getOperand(i)->getName().contains("fpld"))
 								{
 									continue;
@@ -604,16 +603,12 @@ namespace {
 								Builder.CreateCall(val, args_ref,"");
 
 								//errs()<<*op<<"\n";
-								Type *ptype;
+								Type *ptype = Type::getInt8PtrTy(Ctx);;
 								if(op->getCalledFunction() != NULL)
-								{
 									if(!op->getCalledFunction()->isVarArg())
 										ptype = op->getCalledFunction()->getFunctionType()->params()[i];
-								}
-								else
-									ptype = Type::getInt8PtrTy(Ctx);
 
-								//errs()<<i<<".\t"<<*ptype<<"\n";
+								//errs()<<i<<".\t"<<ptype<<"\n";
 
 								Value* mask = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0x7fffffff);
 								BinaryOperator *ptr32 =  BinaryOperator::Create(Instruction::And, tr_lo, mask , "ptr32", op);
