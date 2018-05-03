@@ -112,6 +112,50 @@ namespace {
 		{
 			bool modified=false;
 
+			for(Module::global_iterator j = M.global_begin(), end = M.global_end(); j != end; ++j)
+			{
+				GlobalVariable *glob = dyn_cast<GlobalVariable>(j);
+				LLVMContext &GCtx = glob->getContext();
+				if(!glob->getType()->isPointerTy())
+				{
+					continue;
+					//errs()<<*glob->getType()<<"\n";
+				}
+				//errs()<<*glob<<" : "<<glob->isConstant()<<"\n";
+				if(glob->isConstant())
+					continue;
+				if(glob->hasInitializer())
+				{
+					//todo
+					if(!glob->getValueType()->isPointerTy())
+						continue;
+						//errs()<<"HERE"<<*glob<<"\n";
+					//glob->mutateType(Type::getInt128Ty(GCtx));
+					GlobalVariable *glob2 = new GlobalVariable
+					(
+						M,
+						Type::getInt128Ty(GCtx),
+						glob->isConstant(),
+						glob->getLinkage(),
+						llvm::ConstantInt::get(Type::getInt128Ty(GCtx),0),
+						"fpr_"+glob->getName(),
+						glob
+					);
+					//errs()<<"CTXT: "<<&(glob->getContext())<<"\t"<<&(glob2->getContext())<<"\n";
+					glob->replaceAllUsesWith(glob2);
+					//glob2->setParent(glob->getParent());
+					//errs()<<*glob<<"\n"<<*glob2<<"\n";
+					j--;
+					glob->dropAllReferences();
+					glob->eraseFromParent();
+				}
+				else
+				{
+					//glob->mutateType(Type::getInt128Ty(GCtx));
+					//errs()<<*glob<<"\n";
+				}
+			}
+
 			// First pass replaces malloc and free
 			Value *mallocFunc;
 			Value *freeFunc;
@@ -466,8 +510,15 @@ namespace {
 
 						else if (auto *op = dyn_cast<LoadInst>(I))
 						{
+							if(op->getOperand(0)->getType() == Type::getIntNPtrTy(Ctx,128))
+							{
+								op->mutateType(Type::getInt128Ty(Ctx));
+								continue;
+							}
+							//errs()<<*op<<"\t"<<*op->getOperand(0)<<"\n";
 							if(op->getOperand(0)->getType() != Type::getInt128Ty(Ctx))
 								continue;
+
 							modified = true;
 							TruncInst *tr_lo = new TruncInst(op->getOperand(0), Type::getInt64Ty(Ctx),"fpr_low", op);	// alloca stack cookie
 							Value* shamt = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),64);
