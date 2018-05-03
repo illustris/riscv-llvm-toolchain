@@ -32,7 +32,7 @@ unsigned int hash_fn_debug(unsigned long long i64)
 unsigned long long hash(unsigned long long *cook_ptr)
 {
 	//printf("\n--------\nHASH 0x%llx\n--------\n",(unsigned long long)cook_ptr);
-    *cook_ptr = random64();
+	*cook_ptr = random64();
 	//printf("Setting cookie %llx at address %llx\nhash = %x\n",*cook_ptr,(unsigned long long int)cook_ptr,hash_fn_debug(*cook_ptr));
 	return hash_fn(*cook_ptr);
 	//return 0;
@@ -42,9 +42,16 @@ void val(unsigned long long hi, unsigned long long lo)
 {
 	//printf("\n--------\nVAL 0x%016llx%llx\n--------\n",hi,lo);
 	//printf("BOUND:BASE  %016llx\n", (unsigned long long int) (hi));
-    //printf("IDHASH:PTR  %016llx\n", (unsigned long long int) lo);
+	//printf("IDHASH:PTR  %016llx\n", (unsigned long long int) lo);
 	unsigned int hash = ((lo & 0xffffffff00000000) >> 32);
 	unsigned long long *base = (unsigned long long*) ((hi) & 0x00000000ffffffff);
+	if(base == NULL)
+	{
+		printf("!!!!VALIDATE ERROR\ngot NULL pointer for base");
+		printf("BOUND:BASE  %016llx\n", (unsigned long long int) (hi));
+		printf("IDHASH:PTR  %016llx\n", (unsigned long long int) lo);
+		exit(0);
+	}
 	if(hash != hash_fn(*base))
 	{
 		printf("!!!!VALIDATE ERROR\ngot hash %x from %08llx\nexpected %x",hash,(unsigned long long)base,hash_fn_debug(*base));
