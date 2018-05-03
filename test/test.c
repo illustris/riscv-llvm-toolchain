@@ -54,6 +54,8 @@ struct with_pointer
 	struct simple *s1;
 };
 
+int *gptr;
+
 int main()
 {
 
@@ -199,6 +201,27 @@ int main()
 		exit(0);
 	}
 
+	swp1.s1 = malloc(sizeof(struct with_pointer));
+	swp1.s1->a = 20;
+	swp1.s1->b[3] = 'z';
+	if(swp1.s1->a == 20 && swp1.s1->b[3] == 'z')
+		printf("swp1.s1->a = %d, swp1.s1->b[3] = %c\n",swp1.s1->a,swp1.s1->b[3]);
+	else
+	{
+		printf("!!!!!!!UNEXPECTED VALUE!!!!!!!\ns1.a = %d, s1.b[3] = %c\n",swp1.s1->a,swp1.s1->b[3]);
+		exit(0);
+	}
+	free(swp1.s1);
+
+	printf("PASS\n");
+
+	printf("\n\n************\nTesting global pointer\n************\n");
+	int loc[3];// = {1337,1338,1339};
+	int *locp;
+	loc[1]=1337;
+	gptr = loc;
+	locp = loc;
+	printf("%d\t%d\n",gptr[1],locp[1]);
 	printf("PASS\n");
 
 	return 0;
