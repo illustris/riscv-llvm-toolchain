@@ -188,9 +188,10 @@ int main()
 	}
 
 	struct with_pointer swp1;
-	swp1.s1->a = 10;
-	swp1.s1->b[3] = 'x';
-	if(swp1.s1->a == 10 && swp1.s1->b[3] == 'x')
+	swp1.s1 = &s1;
+	swp1.s1->a = 20;
+	swp1.s1->b[3] = 'z';
+	if(swp1.s1->a == 20 && swp1.s1->b[3] == 'z')
 		printf("swp1.s1->a = %d, swp1.s1->b[3] = %c\n",swp1.s1->a,swp1.s1->b[3]);
 	else
 	{
