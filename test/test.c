@@ -4,10 +4,10 @@
 
 //void printptr(void *a);
 
-void test();
+void rec();
 int rec_count = 0;
 char tc = 'a';
-void test(){
+void rec(){
 	char a[1024][1024];
 	a[0][0] = tc;
 	tc++;
@@ -17,7 +17,7 @@ void test(){
 	rec_count++;
 	//fflush(stdout);
 	if(rec_count != 6)
-		test();
+		rec();
 }
 
 int cbr(int *ptr)
@@ -33,6 +33,26 @@ int f2()
 {
 	return 16;
 }
+
+struct simple
+{
+	int a;
+	char b[10];
+};
+
+struct nested
+{
+	int a;
+	char b[10];
+	struct simple s1;
+};
+
+struct with_pointer
+{
+	int a;
+	char b[10];
+	struct simple *s1;
+};
 
 int main()
 {
@@ -53,7 +73,7 @@ int main()
 	printf("PASS\n");
 
 	printf("\n\n*****************\nTesting recursion\n*****************\n");
-	test();
+	rec();
 	printf("PASS\n");
 
 	printf("\n\n*******************\nTesting malloc-free\n*******************\n");
@@ -144,5 +164,41 @@ int main()
 	int *np;
 	np = NULL;
 	printf("PASS\n");
+
+	printf("\n\n************\nTesting structs\n************\n");
+	struct simple s1;
+	s1.a = 10;
+	s1.b[3] = 'x';
+	if(s1.a == 10 && s1.b[3] == 'x')
+		printf("s1.a = %d, s1.b[3] = %c\n",s1.a,s1.b[3]);
+	else
+	{
+		printf("!!!!!!!UNEXPECTED VALUE!!!!!!!\ns1.a = %d, s1.b[3] = %c\n",s1.a,s1.b[3]);
+		exit(0);
+	}
+	struct nested n1;
+	n1.s1.a = 10;
+	n1.s1.b[3] = 'x';
+	if(n1.s1.a == 10 && n1.s1.b[3] == 'x')
+		printf("n1.s1.a = %d, n1.s1.b[3] = %c\n",n1.s1.a,n1.s1.b[3]);
+	else
+	{
+		printf("!!!!!!!UNEXPECTED VALUE!!!!!!!\ns1.a = %d, s1.b[3] = %c\n",n1.s1.a,n1.s1.b[3]);
+		exit(0);
+	}
+
+	struct with_pointer swp1;
+	swp1.s1->a = 10;
+	swp1.s1->b[3] = 'x';
+	if(swp1.s1->a == 10 && swp1.s1->b[3] == 'x')
+		printf("swp1.s1->a = %d, swp1.s1->b[3] = %c\n",swp1.s1->a,swp1.s1->b[3]);
+	else
+	{
+		printf("!!!!!!!UNEXPECTED VALUE!!!!!!!\ns1.a = %d, s1.b[3] = %c\n",swp1.s1->a,swp1.s1->b[3]);
+		exit(0);
+	}
+
+	printf("PASS\n");
+
 	return 0;
 }
