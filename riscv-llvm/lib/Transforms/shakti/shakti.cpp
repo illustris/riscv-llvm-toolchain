@@ -10,6 +10,7 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/CallSite.h"
 #include <stack>
+#include <map>
 
 using namespace llvm;
 
@@ -21,9 +22,45 @@ namespace {
 		static char ID;
 		shaktiPass() : ModulePass(ID) {}
 
+		std::map <StructType*, StructType*> rep_structs;
+
 		virtual bool runOnModule(Module &M)
 		{
 			bool modified=false;
+
+			std::vector< StructType * > structs = M.getIdentifiedStructTypes();
+			for(auto &def : structs)
+			{
+				//errs()<<*def<<"\n";
+				LLVMContext &GCtx = def->getContext();
+				bool flag = false;
+				std::vector<Type *> elems_vec;
+				for(StructType::element_iterator i = def->element_begin(), end = def->element_end(); i!= end; ++i)
+				{
+					Type *ty = dyn_cast<Type>(*i);
+					//errs()<<*ty<<"\n";
+					if(ty->isPointerTy())
+					{
+						//**i->mutateType(Type::getInt128Ty(GCtx));
+						elems_vec.push_back(Type::getInt128Ty(GCtx));
+						flag = 1;
+						//errs()<<ty<<"\n";
+					}
+					else
+					{
+						elems_vec.push_back(ty);
+					}
+				}
+				if(flag)
+				{
+					//errs()<<dyn_cast<StructType>(def)<<"\n";
+					ArrayRef<Type *> elems(elems_vec);
+					StructType *frm = dyn_cast<StructType>(def);
+					StructType *to = StructType::create(elems,frm->getStructName(),frm->isPacked());
+					//errs()<<"INSERTING "<<*frm<<" TO "<<*to<<"\n";
+					rep_structs.insert(std::make_pair(frm, to));
+				}
+			}
 
 			for(Module::global_iterator j = M.global_begin(), end = M.global_end(); j != end; ++j)
 			{
@@ -78,6 +115,7 @@ namespace {
 				modified=false;
 				// Get the safemalloc function to call from the new library.
 				LLVMContext &Ctx = F.getContext();
+				DataLayout *D = new DataLayout(&M);
 				// Malloc arg is just one unsigned long
 				std::vector<Type*> mallocParamTypes = {Type::getInt64Ty(Ctx)};
 				std::vector<Type*> safeMallocParamTypes = {Type::getInt64Ty(Ctx)};
@@ -117,6 +155,33 @@ namespace {
 							// If call invokes malloc
 							if((op->getCalledValue()) == (mallocFunc))
 							{
+								BitCastInst *nextbc;
+								//errs()<<"*******\n"<<*op<<"\n"<<*op->getNextNode()<<"\n-------\n";
+								if((nextbc = dyn_cast<BitCastInst>(op->getNextNode())))
+								{
+									if(op == nextbc->getOperand(0))
+									{
+										PointerType *bcptr;
+										if((bcptr = dyn_cast<PointerType>(nextbc->getDestTy())))
+										{
+											StructType *st;
+											Type* eltype = bcptr->getElementType();
+											if((st = dyn_cast<StructType>(eltype)))
+											{
+												if(rep_structs.find(st) != rep_structs.end())
+												{
+													//errs()<<"HERE: "<<*(rep_structs.at(st))<<"\n";
+													StructType *to = rep_structs.at(st);
+													const StructLayout *SL = D->getStructLayout(to);
+													unsigned long long sz = SL->getSizeInBytes();
+													//errs()<<*op->getOperand(0)<<"\n"<<*nextbc<<"\n"<<sz<<"\n";
+													op->setOperand(0,llvm::ConstantInt::get(Type::getInt64Ty(Ctx),sz));
+												}
+											}
+										}
+
+									}
+								}
 								//errs()<<"\n----------------\nReplacing:\n";
 								//op->print(llvm::errs(), NULL);
 								//errs()<<"\nwith:\n";
@@ -239,7 +304,14 @@ namespace {
 
 						if (auto *op = dyn_cast<AllocaInst>(I))
 						{
-							//errs()<<*op->getAllocatedType()<<"\n";
+
+							if(rep_structs.find(dyn_cast<StructType>(op->getAllocatedType())) != rep_structs.end())
+							{
+								op->mutateType(rep_structs.at(dyn_cast<StructType>(op->getAllocatedType()))->getPointerTo());
+								op->setAllocatedType(rep_structs.at(dyn_cast<StructType>(op->getAllocatedType())));
+								//errs()<<*op->getAllocatedType()<<"\n";
+							}
+
 							if(op->getAllocatedType()->isFunctionTy())
 							{
 								//errs()<<"Ignoring function pointer "<<*op<<"\n";
@@ -341,7 +413,6 @@ namespace {
 							Builder.SetInsertPoint(trunc->getNextNode());
 							Value *fpr = Builder.CreateCall(craftFunc, args_ref,op->getName()+"fpr");
 
-							bool flag = false;
 							std::stack <User *> users;
 							std::stack <int> pos;
 
