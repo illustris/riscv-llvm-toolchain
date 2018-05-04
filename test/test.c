@@ -55,6 +55,7 @@ struct with_pointer
 };
 
 int *gptr;
+struct with_pointer *gptr_tostruct;
 
 int main()
 {
@@ -223,6 +224,10 @@ int main()
 	{
 		printf("swpptr->a == %d && swpptr->b[3] == %c && swpptr->s1->a == %d && swpptr->s1->b[5] = %c\n",swpptr->a,swpptr->b[3],swpptr->s1->a,swpptr->s1->b[5]);
 	}
+	else
+	{
+		printf("!!!!!!!UNEXPECTED VALUE!!!!!!!\n");
+	}
 
 	printf("PASS\n");
 
@@ -233,6 +238,21 @@ int main()
 	gptr = loc;
 	locp = loc;
 	printf("%d\t%d\n",gptr[1],locp[1]);
+
+	gptr_tostruct = malloc(sizeof(struct with_pointer));
+	gptr_tostruct->a = 10;
+	gptr_tostruct->b[3] = 'z';
+	gptr_tostruct->s1 = malloc(sizeof(struct simple));
+	gptr_tostruct->s1->a = 30;
+	gptr_tostruct->s1->b[5] = 'k';
+	if(gptr_tostruct->a == 10 && gptr_tostruct->b[3] == 'z' && gptr_tostruct->s1->a == 30 && gptr_tostruct->s1->b[5] == 'k')
+	{
+		printf("gptr_tostruct->a == %d && gptr_tostruct->b[3] == %c && gptr_tostruct->s1->a == %d && gptr_tostruct->s1->b[5] = %c\n",gptr_tostruct->a,gptr_tostruct->b[3],gptr_tostruct->s1->a,gptr_tostruct->s1->b[5]);
+	}
+	else
+	{
+		printf("!!!!!!!UNEXPECTED VALUE!!!!!!!\n");
+	}
 	printf("PASS\n");
 
 	return 0;
