@@ -633,8 +633,16 @@ namespace {
 								//errs()<<*op<<"\n";
 								Type *ptype = Type::getInt8PtrTy(Ctx);;
 								if(op->getCalledFunction() != NULL)
+								{
 									if(!op->getCalledFunction()->isVarArg())
+									{
 										ptype = op->getCalledFunction()->getFunctionType()->params()[i];
+									}
+									else if(i < op->getCalledFunction()->getFunctionType()->params().size())
+									{
+										ptype = op->getCalledFunction()->getFunctionType()->params()[i];
+									}
+								}
 
 								//errs()<<i<<".\t"<<ptype<<"\n";
 
