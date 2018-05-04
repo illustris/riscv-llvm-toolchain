@@ -201,7 +201,7 @@ int main()
 		exit(0);
 	}
 
-	swp1.s1 = malloc(sizeof(struct with_pointer));
+	swp1.s1 = malloc(sizeof(struct simple));
 	swp1.s1->a = 20;
 	swp1.s1->b[3] = 'z';
 	if(swp1.s1->a == 20 && swp1.s1->b[3] == 'z')
@@ -212,6 +212,17 @@ int main()
 		exit(0);
 	}
 	free(swp1.s1);
+
+	struct with_pointer *swpptr = malloc(sizeof(struct with_pointer));
+	swpptr->a = 10;
+	swpptr->b[3] = 'z';
+	swpptr->s1 = malloc(sizeof(struct simple));
+	swpptr->s1->a = 30;
+	swpptr->s1->b[5] = 'k';
+	if(swpptr->a == 10 && swpptr->b[3] == 'z' && swpptr->s1->a == 30 && swpptr->s1->b[5] == 'k')
+	{
+		printf("swpptr->a == %d && swpptr->b[3] == %c && swpptr->s1->a == %d && swpptr->s1->b[5] = %c\n",swpptr->a,swpptr->b[3],swpptr->s1->a,swpptr->s1->b[5]);
+	}
 
 	printf("PASS\n");
 
