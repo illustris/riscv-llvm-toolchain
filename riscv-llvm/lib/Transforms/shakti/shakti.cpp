@@ -13,94 +13,7 @@
 
 using namespace llvm;
 
-Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Context)
-{
-	int offset = 0;
-	Value *Offset,*temp;
-	int c = 0;
-	bool isconstant = true;
-
-	if(ConstantInt *CI = dyn_cast<ConstantInt>(GI->getOperand(GI->getNumOperands()-1)))// get the last operand of the getelementptr
-		c = CI->getZExtValue ();
-	else
-	{
-		//suppose the last index was not a constant then set 'c' to some special value and get the last operand.
-		isconstant = false;
-		// Instruction *I = dyn_cast<Instruction>(GI->getOperand(GI->getNumOperands()-1));
-		// Offset = I->getOperand(0);
-		Offset = GI->getOperand(GI->getNumOperands()-1);
-	}
-
-	Type *type = GI->getSourceElementType(); //get the type of getelementptr
-
-	if(StructType *t = dyn_cast<StructType>(type))
-	{	//check for struct type
-		const StructLayout *SL = D->getStructLayout(t);
-		offset+= SL->getElementOffset(c);
-	}
-	else if(ArrayType *t = dyn_cast<ArrayType>(type))
-	{
-		ArrayType *rec = t;
-		ArrayType *rec_old = t;
-		//errs()<<0<<": "<<*rec<<"\n";
-		int depth=1;
-		std::stack <int> sizes;
-		sizes.push(t->getArrayNumElements());
-		while((rec = dyn_cast<ArrayType>(rec->getElementType())))
-		{
-			//errs()<<depth<<": "<<*rec<<"\n";
-			sizes.push(rec->getArrayNumElements());
-			rec_old = rec;
-			depth++;
-		}
-
-		Type *baseTy = rec_old->getElementType();
-
-		Type *gelType = Type::getInt128Ty(Context);
-		while(depth)
-		{
-			int sz = sizes.top();
-			sizes.pop();
-			gelType = ArrayType::get(gelType,sz);
-			depth--;
-		}
-
-		//errs()<<depth<<": "<<*gelType<<"\n";
-		bool isFnArr = 0;
-		if(dyn_cast<PointerType>(baseTy))
-		{
-			isFnArr = dyn_cast<PointerType>(baseTy)->getElementType()->isFunctionTy();
-		}
-
-		if(!isconstant)
-		{
-			//errs()<<"\n------\n"<<*GI<<"\n";
-			temp= llvm::ConstantInt::get(Type::getInt64Ty(Context), D->getTypeAllocSize((baseTy->isPointerTy() && !isFnArr)?Type::getInt128Ty(Context):baseTy));
-			//errs()<<*t->getElementType()<<"\n"<<D->getTypeAllocSize(t->getElementType())<<"\n";
-			IRBuilder<> builder(GI);
-			Offset = builder.CreateBinOp(Instruction::Mul,Offset, temp, "tmp");
-		}
-		else
-			offset+=c*D->getTypeAllocSize(t->getElementType()); //D->getTypeAllocSize(t)/t->getArrayNumElements();		
-	}
-	else
-	{	//basic pointer increment or decrements
-
-		if(!isconstant)
-		{
-			temp= llvm::ConstantInt::get(Type::getInt64Ty(Context), D->getTypeAllocSize(type));
-			IRBuilder<> builder(GI);
-			Offset = builder.CreateBinOp(Instruction::Mul,Offset, temp, "tmp");
-		}
-		else
-			offset+=c*D->getTypeAllocSize(type);
-	}
-
-	if(isconstant)
-		Offset = llvm::ConstantInt::get(Type::getInt32Ty(Context),offset);
-
-	return Offset;
-}
+Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Context);
 
 namespace {
 	struct shaktiPass : public ModulePass
@@ -432,27 +345,11 @@ namespace {
 							std::stack <User *> users;
 							std::stack <int> pos;
 
-							for (auto &U : op->uses())
-							{
-								if(!flag)
-								{
-									flag = true;
-									continue;
-								}
+							// Replace all uses of pointer with fatpointer
+							op->replaceAllUsesWith(fpr);
+							// except in the ptrtoint instruction that uses the pointer to make a fatpointer
+							trunc->setOperand(0,op);
 
-								User *user = U.getUser();
-								users.push(user);
-								pos.push(U.getOperandNo());
-							}
-
-							while(users.size())
-							{
-								User *u = users.top();
-								users.pop();
-								int index = pos.top();
-								pos.pop();
-								u->setOperand(index, fpr);	
-							}
 						}
 
 						else if (auto *op = dyn_cast<StoreInst>(I)) {
@@ -827,6 +724,95 @@ namespace {
 			return modified;
 		}
 	};
+}
+
+Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Context)
+{
+	int offset = 0;
+	Value *Offset,*temp;
+	int c = 0;
+	bool isconstant = true;
+
+	if(ConstantInt *CI = dyn_cast<ConstantInt>(GI->getOperand(GI->getNumOperands()-1)))// get the last operand of the getelementptr
+		c = CI->getZExtValue ();
+	else
+	{
+		//suppose the last index was not a constant then set 'c' to some special value and get the last operand.
+		isconstant = false;
+		// Instruction *I = dyn_cast<Instruction>(GI->getOperand(GI->getNumOperands()-1));
+		// Offset = I->getOperand(0);
+		Offset = GI->getOperand(GI->getNumOperands()-1);
+	}
+
+	Type *type = GI->getSourceElementType(); //get the type of getelementptr
+
+	if(StructType *t = dyn_cast<StructType>(type))
+	{	//check for struct type
+		const StructLayout *SL = D->getStructLayout(t);
+		offset+= SL->getElementOffset(c);
+	}
+	else if(ArrayType *t = dyn_cast<ArrayType>(type))
+	{
+		ArrayType *rec = t;
+		ArrayType *rec_old = t;
+		//errs()<<0<<": "<<*rec<<"\n";
+		int depth=1;
+		std::stack <int> sizes;
+		sizes.push(t->getArrayNumElements());
+		while((rec = dyn_cast<ArrayType>(rec->getElementType())))
+		{
+			//errs()<<depth<<": "<<*rec<<"\n";
+			sizes.push(rec->getArrayNumElements());
+			rec_old = rec;
+			depth++;
+		}
+
+		Type *baseTy = rec_old->getElementType();
+
+		Type *gelType = Type::getInt128Ty(Context);
+		while(depth)
+		{
+			int sz = sizes.top();
+			sizes.pop();
+			gelType = ArrayType::get(gelType,sz);
+			depth--;
+		}
+
+		//errs()<<depth<<": "<<*gelType<<"\n";
+		bool isFnArr = 0;
+		if(dyn_cast<PointerType>(baseTy))
+		{
+			isFnArr = dyn_cast<PointerType>(baseTy)->getElementType()->isFunctionTy();
+		}
+
+		if(!isconstant)
+		{
+			//errs()<<"\n------\n"<<*GI<<"\n";
+			temp= llvm::ConstantInt::get(Type::getInt64Ty(Context), D->getTypeAllocSize((baseTy->isPointerTy() && !isFnArr)?Type::getInt128Ty(Context):baseTy));
+			//errs()<<*t->getElementType()<<"\n"<<D->getTypeAllocSize(t->getElementType())<<"\n";
+			IRBuilder<> builder(GI);
+			Offset = builder.CreateBinOp(Instruction::Mul,Offset, temp, "tmp");
+		}
+		else
+			offset+=c*D->getTypeAllocSize(t->getElementType()); //D->getTypeAllocSize(t)/t->getArrayNumElements();
+	}
+	else
+	{	//basic pointer increment or decrements
+
+		if(!isconstant)
+		{
+			temp= llvm::ConstantInt::get(Type::getInt64Ty(Context), D->getTypeAllocSize(type));
+			IRBuilder<> builder(GI);
+			Offset = builder.CreateBinOp(Instruction::Mul,Offset, temp, "tmp");
+		}
+		else
+			offset+=c*D->getTypeAllocSize(type);
+	}
+
+	if(isconstant)
+		Offset = llvm::ConstantInt::get(Type::getInt32Ty(Context),offset);
+
+	return Offset;
 }
 
 char shaktiPass::ID = 0;
