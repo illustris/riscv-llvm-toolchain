@@ -28,6 +28,7 @@ namespace {
 		{
 			bool modified=false;
 
+			// First pass creates duplicate definitions of structs with pointers
 			std::vector< StructType * > structs = M.getIdentifiedStructTypes();
 			for(auto &def : structs)
 			{
@@ -46,6 +47,10 @@ namespace {
 						flag = 1;
 						//errs()<<ty<<"\n";
 					}
+					/*else if(ty->isArrayTy())
+					{
+						.
+					}*/
 					else
 					{
 						elems_vec.push_back(ty);
@@ -57,7 +62,7 @@ namespace {
 					ArrayRef<Type *> elems(elems_vec);
 					StructType *frm = dyn_cast<StructType>(def);
 					StructType *to = StructType::create(elems,frm->getStructName(),frm->isPacked());
-					//errs()<<"INSERTING "<<*frm<<" TO "<<*to<<"\n";
+					//errs()<<"------------------\nINSERTING "<<*frm<<"\nTO "<<*to<<"\n------------------\n";
 					rep_structs.insert(std::make_pair(frm, to));
 				}
 			}
@@ -105,8 +110,9 @@ namespace {
 					//errs()<<*glob<<"\n";
 				}
 			}
+			//errs()<<"First pass done\n";
 
-			// First pass replaces malloc and free
+			// Second pass replaces malloc and free
 			Value *mallocFunc;
 			Value *freeFunc;
 
@@ -211,14 +217,14 @@ namespace {
 					}
 				}
 			}
-			//errs()<<"First pass done\n";
+			//errs()<<"Second pass done\n";
 
 			dyn_cast<Function>(mallocFunc)->dropAllReferences();
 			dyn_cast<Function>(freeFunc)->dropAllReferences();
 			dyn_cast<Function>(mallocFunc)->removeFromParent();
 			dyn_cast<Function>(freeFunc)->removeFromParent();//*/
 
-			// Second pass adds stack cookie
+			// Third pass adds stack cookie
 			for (auto &F : M)
 			{
 				LLVMContext &Ctx = F.getContext();
@@ -265,9 +271,9 @@ namespace {
 						}
 				}
 			}
-			//errs()<<"Second pass done\n";
+			//errs()<<"Third pass done\n";
 
-			// Third pass replaces pointers, store and load
+			// Fourth pass replaces pointers, store and load
 			for (auto &F : M)
 			{
 				DataLayout *D = new DataLayout(&M);
@@ -431,8 +437,47 @@ namespace {
 								op->setOperand(0, nullconst);
 								//errs()<<"FOUND CONSTANT\n"<<*op->getOperand(0)<<"\n"<<op->getOperand(0)->getNumUses()<<"\n";
 							}
+							//This happens when trying to store fatpointers to pinters inside special structs
 							if(op->getOperand(1)->getType() != Type::getInt128Ty(Ctx))
+							{
+								// if storing non-i128 object to a regular pointer, do nothing
+								if(op->getOperand(0)->getType() != Type::getInt128Ty(Ctx))
+									continue;
+								//else if storing i128 to i128*, do nothing
+								else if(dyn_cast<PointerType>(op->getOperand(1)->getType())->getElementType() == Type::getInt128Ty(Ctx))
+									continue;
+
+								//errs()<<"<HERE>\n";
+								Type *op1Ty = dyn_cast<PointerType>(op->getOperand(1)->getType())->getElementType();
+								//validate, truncate and store
+								modified = true;
+								TruncInst *tr_lo1 = new TruncInst(op->getOperand(0), Type::getInt64Ty(Ctx),"fpr_lowx", op);	// alloca stack cookie
+								Value* shamt1 = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),64);
+								BinaryOperator *shifted1 =  BinaryOperator::Create(Instruction::LShr, op->getOperand(0), shamt1 , "fpr_hi_big", op);
+								TruncInst *tr_hi1 = new TruncInst(shifted1, Type::getInt64Ty(Ctx),"fpr_hix", op);	// alloca stack cookie
+
+								std::vector<Value *> args1;
+
+								args1.push_back(tr_hi1);
+								args1.push_back(tr_lo1);
+								ArrayRef<Value *> args_ref1(args1);
+
+								// Create call to intrinsic
+								IRBuilder<> Builder(I);
+								Builder.SetInsertPoint(I);
+								Builder.CreateCall(val, args_ref1,"");
+
+								Value* mask1 = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0x7fffffff);
+								BinaryOperator *ptr32_1 =  BinaryOperator::Create(Instruction::And, tr_lo1, mask1 , "ptr32x", op);
+								IntToPtrInst *ptr1 = new IntToPtrInst(ptr32_1,op1Ty,"ptrx",op);
+
+								new StoreInst(ptr1,op->getOperand(1),op);
+
+								--i;
+								op->dropAllReferences();
+								op->removeFromParent();
 								continue;
+							}
 							modified = true;
 							TruncInst *tr_lo = new TruncInst(op->getOperand(1), Type::getInt64Ty(Ctx),"fpr_low", op);	// alloca stack cookie
 							Value* shamt = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),64);
@@ -539,6 +584,31 @@ namespace {
 
 						else if (auto *op = dyn_cast<GetElementPtrInst>(I))
 						{
+							if(op->getOperand(0)->getType()->isPointerTy())
+							{
+								PointerType *pt1 = dyn_cast<PointerType>(op->getOperand(0)->getType());
+								//StructType *st1 = dyn_cast<StructType>(op->getOperand(0)->getType()->getElementType());
+								//errs()<<"GETELEMENTPTR name: "<<*pt1->getElementType()<<"\n";
+								if(pt1->getElementType()->isStructTy())
+								{
+									StructType *st1 = dyn_cast<StructType>(pt1->getElementType());
+									if(st1->getName().contains("_reent") || st1->getName().contains("spec_fd_t"))
+									{
+										//errs()<<"STRUCT NAME: "<<st1->getName()<<"\n";
+										continue;
+									}
+								}
+							}
+							//temp fix
+							if(op->getOperand(0)->getName().contains("spec_fd"))
+							{
+								continue;
+							}
+							if(op->getOperand(0)->getType()->isPointerTy())
+							{
+								continue;
+							}
+
 							modified=true;
 							//errs()<<"\n-----------\n"<<*op<<"\n-----------\n";
 							Value *offset = resolveGetElementPtr(op,D,Ctx);
@@ -658,6 +728,19 @@ namespace {
 							}
 							//errs()<<"\n=************************************************\n";//*/
 						}
+						else if (auto *op = dyn_cast<ICmpInst>(I))
+						{
+							Value *o1 = op->getOperand(0);
+							Value *o2 = op->getOperand(1);
+							if(o1->getType() != o2->getType())
+							{
+								//errs()<<"TYPES: "<<*o1<<" "<<*o2<<"\n";
+								if(dyn_cast<ConstantPointerNull>(o2))
+								{
+									op->setOperand(1,llvm::ConstantInt::get(Type::getInt128Ty(Ctx),0));
+								}
+							}
+						}
 						//errs()<<*I;
 						//errs()<<"\n--------\n";
 
@@ -667,9 +750,9 @@ namespace {
 				//errs()<<F;
 				//errs()<<"\n*************************************************\n";
 			}
-			//errs()<<"Third pass done\n";
+			//errs()<<"Fourth pass done\n";
 
-			// Fourth pass Fixes argument types in function calls within the module
+			// Fifth pass Fixes argument types in function calls within the module
 			Module::FunctionListType &functions = M.getFunctionList();
 			std::stack< Function * > to_replace_functions;
 			std::stack< Function * > replace_with_functions;
@@ -683,9 +766,10 @@ namespace {
 				LLVMContext &Ctx = func.getContext();
 				if(func.isDeclaration())
 				{
-					//errs()<<"\n*****\n"<<func<<"\n*****\n";
+					//errs()<<"\n*****\nFound declaration:\n"<<func<<"\n*****\n";
 					continue;
 				}
+				//errs()<<"\n*****\nFound definition:\n"<<func<<"\n*****\n";
 
 				std::vector<Type*> fParamTypes;
 				bool fnHasPtr = false;
@@ -729,6 +813,7 @@ namespace {
 				replace_with_functions.push(NF);
 				argCount.push(arg_index);
 			}
+			//errs()<<"HERE\n";
 
 			while(!to_replace_functions.empty())
 			{
@@ -778,6 +863,11 @@ namespace {
 						}
 						//errs()<<*op<<"\n";
 					}
+					else
+					{
+						//errs()<<"UNKNOWN USER:\n"<<*(funcx->user_back())<<"\n";
+						continue;
+					}
 				}//
 
 				Function::arg_iterator arg_i2 = funcy->arg_begin();
@@ -797,7 +887,7 @@ namespace {
 				funcx->dropAllReferences();
 				funcx->removeFromParent();
 			}
-			//errs()<<"Fourth pass done\n";
+			//errs()<<"Fifth pass done\n";
 
 			//errs()<<"\n--------------\n"<<M<<"\n----------------\n";
 			return modified;
