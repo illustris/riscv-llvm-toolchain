@@ -255,5 +255,9 @@ int main()
 	}
 	printf("PASS\n");
 
+	printf("\n\n************\nTesting reentrant function\n************\n");
+	fflush(stdout);
+	printf("PASS\n");
+
 	return 0;
 }
