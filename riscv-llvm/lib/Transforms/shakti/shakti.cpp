@@ -28,6 +28,10 @@ namespace {
 		{
 			bool modified=false;
 
+			unsigned long long ro_cook = 0xdeadbeef1337c0d3;
+			unsigned long ro_hash = 0xcd9a7e3c;
+			GlobalVariable *rodata_cookie = new GlobalVariable(M, Type::getInt64Ty(M.getContext()), true, GlobalValue::LinkageTypes::PrivateLinkage, ConstantInt::get(Type::getInt64Ty(M.getContext()),ro_cook), "ro_cookie");
+
 			// First pass creates duplicate definitions of structs with pointers
 			std::vector< StructType * > structs = M.getIdentifiedStructTypes();
 			for(auto &def : structs)
@@ -430,6 +434,7 @@ namespace {
 						}
 
 						else if (auto *op = dyn_cast<StoreInst>(I)) {
+							//errs()<<*op<<"\n";
 							if(dyn_cast<ConstantPointerNull>(op->getOperand(0)))
 							{
 								//op->getOperand(0)->mutateType(Type::getInt128Ty(Ctx));
@@ -438,18 +443,23 @@ namespace {
 								//errs()<<"FOUND CONSTANT\n"<<*op->getOperand(0)<<"\n"<<op->getOperand(0)->getNumUses()<<"\n";
 							}
 							//This happens when trying to store fatpointers to pinters inside special structs
+							//errs()<<"*********\n"<<*op<<"\n"<<*op->getOperand(1)<<"\n"<<*op->getOperand(1)->getType()<<"\nxxxxxxxx\n";
 							if(op->getOperand(1)->getType() != Type::getInt128Ty(Ctx))
 							{
+								//errs()<<*op->getOperand(0)<<"\n"<<*op->getOperand(0)->getType()<<"\n";
 								// if storing non-i128 object to a regular pointer, do nothing
 								if(op->getOperand(0)->getType() != Type::getInt128Ty(Ctx))
+								{
 									continue;
+								}
 								//else if storing i128 to i128*, do nothing
 								else if(dyn_cast<PointerType>(op->getOperand(1)->getType())->getElementType() == Type::getInt128Ty(Ctx))
 									continue;
 
 								//errs()<<"<HERE>\n";
+								// get here only if op 0 is i128 and operand1 != i128*
 								Type *op1Ty = dyn_cast<PointerType>(op->getOperand(1)->getType())->getElementType();
-								//validate, truncate and store
+								//validate, truncate and store operand 0
 								modified = true;
 								TruncInst *tr_lo1 = new TruncInst(op->getOperand(0), Type::getInt64Ty(Ctx),"fpr_lowx", op);	// alloca stack cookie
 								Value* shamt1 = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),64);
@@ -471,13 +481,43 @@ namespace {
 								BinaryOperator *ptr32_1 =  BinaryOperator::Create(Instruction::And, tr_lo1, mask1 , "ptr32x", op);
 								IntToPtrInst *ptr1 = new IntToPtrInst(ptr32_1,op1Ty,"ptrx",op);
 
-								new StoreInst(ptr1,op->getOperand(1),op);
+								//new StoreInst(ptr1,op->getOperand(1),op);
+								op->setOperand(0,ptr1);
 
-								--i;
-								op->dropAllReferences();
-								op->removeFromParent();
+								//i--;
+								//i--;
+								//op->dropAllReferences();
+								//op->removeFromParent();
 								continue;
 							}
+
+							if(op->getOperand(0)->getType()->isPointerTy())
+							{
+								if(!(dyn_cast<PointerType>(op->getOperand(0)->getType())->getElementType()->isFunctionTy()))
+								{
+									if(op->getOperand(1)->getType() == Type::getInt128Ty(Ctx))
+									{
+										//craft fpr, store fpr
+										PtrToIntInst *trunc = new PtrToIntInst(op->getOperand(0), Type::getInt32Ty(Ctx),"pti1_",op);
+
+										std::vector<Value *> args;
+										args.push_back(trunc);//ptr
+										PtrToIntInst *ptr32 = new PtrToIntInst(rodata_cookie, Type::getInt32Ty(Ctx),"ptr32_1_",op);
+										args.push_back(ptr32);//base
+
+										args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),0));//TODO bound
+										args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),ro_hash));//hash
+										ArrayRef<Value *> args_ref(args);
+
+										IRBuilder<> Builder(I);
+										Builder.SetInsertPoint(op);
+										Value *fpr = Builder.CreateCall(craftFunc, args_ref,op->getName()+"fprz");
+										op->setOperand(0,fpr);
+										//errs()<<"***\n"<<*op<<"\n"<<*op->getOperand(0)<<"\n"<<*op->getOperand(1)<<"\nxxx\n";
+									}
+								}
+							}
+
 							modified = true;
 							TruncInst *tr_lo = new TruncInst(op->getOperand(1), Type::getInt64Ty(Ctx),"fpr_low", op);	// alloca stack cookie
 							Value* shamt = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),64);
@@ -510,14 +550,15 @@ namespace {
 							Type *storeptrtype = storetype->getPointerTo();
 
 							Value* mask = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0x7fffffff);
-							BinaryOperator *ptr32 =  BinaryOperator::Create(Instruction::And, tr_lo, mask , "ptr32", op);
-							IntToPtrInst *ptr = new IntToPtrInst(ptr32,storeptrtype,"ptr",op);
+							BinaryOperator *ptr32 =  BinaryOperator::Create(Instruction::And, tr_lo, mask , "ptr32_", op);
+							IntToPtrInst *ptr = new IntToPtrInst(ptr32,storeptrtype,"ptrs",op);
 
-							new StoreInst(op->getOperand(0),ptr,op);
+							//new StoreInst(op->getOperand(0),ptr,op);
+							op->setOperand(1, ptr);
 
-							--i;
-							op->dropAllReferences();
-							op->removeFromParent();
+							//--i;
+							//op->dropAllReferences();
+							//op->removeFromParent();
 
 						}
 
@@ -566,9 +607,8 @@ namespace {
 							Type *loadptrtype = loadtype->getPointerTo();
 
 							Value* mask = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0x7fffffff);
-							BinaryOperator *ptr32 =  BinaryOperator::Create(Instruction::And, tr_lo, mask , "ptr32", op);
-							//IntToPtrInst *ptr = new IntToPtrInst(ptr32,storeptrtype,"ptr",op);
-							IntToPtrInst *ptr = new IntToPtrInst(ptr32,loadptrtype,"ptr",op);
+							BinaryOperator *ptr32 =  BinaryOperator::Create(Instruction::And, tr_lo, mask , "ptr32_", op);
+							IntToPtrInst *ptr = new IntToPtrInst(ptr32,loadptrtype,"ptrl",op);
 
 							op->setOperand(0,ptr);
 
@@ -717,14 +757,18 @@ namespace {
 								//errs()<<i<<".\t"<<ptype<<"\n";
 
 								Value* mask = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0x7fffffff);
-								BinaryOperator *ptr32 =  BinaryOperator::Create(Instruction::And, tr_lo, mask , "ptr32", op);
+								BinaryOperator *ptr32 =  BinaryOperator::Create(Instruction::And, tr_lo, mask , "ptr32_", op);
 
-								IntToPtrInst *ptr = new IntToPtrInst(ptr32,ptype,"ptr",op);
+								IntToPtrInst *ptr = new IntToPtrInst(ptr32,ptype,"ptrc",op);
 
 								op->setOperand(i,ptr);
 								op->getOperand(i)->mutateType(ptype);
 								//errs()<<*op<<"\n";
 								//errs()<<*(op->getOperand(i)->getType())<<"\n";
+							}
+							if(op->getFunctionType()->getReturnType() == Type::getInt128Ty(Ctx))
+							{
+								op->mutateType(Type::getInt128Ty(Ctx));
 							}
 							//errs()<<"\n=************************************************\n";//*/
 						}
