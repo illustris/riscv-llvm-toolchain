@@ -851,6 +851,19 @@ namespace {
 						{
 							//errs()<<*op<<"\n";
 							//errs()<<"\n";
+							for(unsigned int i=0;i<op->getNumOperands()-1;i++)
+							{
+								if(op->getOperand(i) != NULL)
+								{
+									if(op->getOperand(i)->getType()->isPointerTy())
+									{
+										if(dyn_cast<ConstantPointerNull>(op->getOperand(i)))
+										{
+											op->setOperand(i,llvm::ConstantInt::get(Type::getInt128Ty(Ctx),0));
+										}
+									}
+								}
+							}
 							if(op->getCalledFunction() != NULL)
 							{
 								if(!(op->getCalledFunction()->isDeclaration())) // skip if definition exists in module
