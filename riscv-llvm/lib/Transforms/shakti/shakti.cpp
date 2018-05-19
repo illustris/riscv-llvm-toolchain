@@ -936,6 +936,19 @@ namespace {
 								}
 							}
 						}
+						else if (auto *op = dyn_cast<PtrToIntInst>(I))
+						{
+							if(op->getOperand(0)->getType() == Type::getInt128Ty(Ctx))
+							{
+								Value* mask2 = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),0x000000000000000000000000ffffffff);
+								BinaryOperator *fpr_addr =  BinaryOperator::Create(Instruction::And, op->getOperand(0), mask2 , "fpr_addr_", op);
+								TruncInst *ti_addr = new TruncInst(fpr_addr, op->getDestTy(),"fpr_ptrtoint_", op);
+								op->replaceAllUsesWith(ti_addr);
+								--i;
+								op->dropAllReferences();
+								op->removeFromParent();
+							}
+						}
 						//errs()<<*I;
 						//errs()<<"\n--------\n";
 
