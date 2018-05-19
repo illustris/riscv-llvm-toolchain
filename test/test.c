@@ -57,6 +57,8 @@ struct with_pointer
 int *gptr;
 struct with_pointer *gptr_tostruct;
 
+const char glob_const_str[] = "This is a lobal constant string";
+
 int main()
 {
 
@@ -257,6 +259,11 @@ int main()
 
 	printf("\n\n************\nTesting reentrant function\n************\n");
 	fflush(stdout);
+	printf("PASS\n");
+
+	printf("\n\n************\nTesting global const strings\n************\n");
+	char *local_strptr = &(glob_const_str[10]);
+	printf("%s\n",local_strptr);
 	printf("PASS\n");
 
 	return 0;
