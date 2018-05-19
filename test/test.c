@@ -262,7 +262,7 @@ int main()
 	printf("PASS\n");
 
 	printf("\n\n************\nTesting global const strings\n************\n");
-	char *local_strptr = &(glob_const_str[10]);
+	const char *local_strptr = &(glob_const_str[10]);
 	printf("%s\n",local_strptr);
 	printf("PASS\n");
 

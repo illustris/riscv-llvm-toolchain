@@ -12,6 +12,8 @@
 #include <stack>
 #include <map>
 
+//#define debug_spass
+
 using namespace llvm;
 
 Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Context);
@@ -114,7 +116,9 @@ namespace {
 					//errs()<<*glob<<"\n";
 				}
 			}
-			//errs()<<"First pass done\n";
+			#ifdef debug_spass
+				errs()<<"First pass done\n";
+			#endif
 
 			// Second pass replaces malloc and free
 			Value *mallocFunc;
@@ -221,7 +225,9 @@ namespace {
 					}
 				}
 			}
-			//errs()<<"Second pass done\n";
+			#ifdef debug_spass
+				errs()<<"Second pass done\n";
+			#endif
 
 			dyn_cast<Function>(mallocFunc)->dropAllReferences();
 			dyn_cast<Function>(freeFunc)->dropAllReferences();
@@ -275,7 +281,9 @@ namespace {
 						}
 				}
 			}
-			//errs()<<"Third pass done\n";
+			#ifdef debug_spass
+				errs()<<"Third pass done\n";
+			#endif
 
 			// Fourth pass replaces pointers, store and load
 			for (auto &F : M)
@@ -794,7 +802,9 @@ namespace {
 				//errs()<<F;
 				//errs()<<"\n*************************************************\n";
 			}
-			//errs()<<"Fourth pass done\n";
+			#ifdef debug_spass
+				errs()<<"Fourth pass done\n";
+			#endif
 
 			// Fifth pass Fixes argument types in function calls within the module
 			Module::FunctionListType &functions = M.getFunctionList();
@@ -931,7 +941,9 @@ namespace {
 				funcx->dropAllReferences();
 				funcx->removeFromParent();
 			}
-			//errs()<<"Fifth pass done\n";
+			#ifdef debug_spass
+				errs()<<"Fifth pass done\n";
+			#endif
 
 			//errs()<<"\n--------------\n"<<M<<"\n----------------\n";
 			return modified;
