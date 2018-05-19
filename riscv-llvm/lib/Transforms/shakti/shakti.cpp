@@ -13,6 +13,7 @@
 #include <map>
 
 //#define debug_spass
+//#define debug_spass_dmodule
 
 using namespace llvm;
 
@@ -285,7 +286,146 @@ namespace {
 				errs()<<"Third pass done\n";
 			#endif
 
-			// Fourth pass replaces pointers, store and load
+			// Fourth pass Fixes argument types in function calls within the module
+			Module::FunctionListType &functions = M.getFunctionList();
+			std::stack< Function * > to_replace_functions;
+			std::stack< Function * > replace_with_functions;
+			std::stack< int > argCount;
+
+			for (Module::FunctionListType::iterator it = functions.begin(), it_end = functions.end(); it != it_end; ++it)
+			{
+				//Function *func = dyn_cast<Function>(it);
+				Function &func = *it;
+
+				LLVMContext &Ctx = func.getContext();
+				if(func.isDeclaration())
+				{
+					//errs()<<"\n*****\nFound declaration:\n"<<func<<"\n*****\n";
+					continue;
+				}
+				//errs()<<"\n*****\nFound definition:\n"<<func<<"\n*****\n";
+
+				std::vector<Type*> fParamTypes;
+				bool fnHasPtr = false;
+				fnHasPtr = (func.getReturnType()->isPointerTy() ? true : false);
+
+				int arg_index = 0;
+
+				bool isFnArr = 0;
+				if(dyn_cast<PointerType>(func.getReturnType()))
+				{
+					isFnArr = dyn_cast<PointerType>(func.getReturnType())->getElementType()->isFunctionTy();
+				}
+
+				Type *fRetType = (func.getReturnType()->isPointerTy() && !(isFnArr) ? Type::getInt128Ty(Ctx) : func.getReturnType());
+				for(FunctionType::param_iterator k = (func.getFunctionType())->param_begin(), endp = (func.getFunctionType())->param_end(); k != endp; ++k)
+				{
+					arg_index++;
+					bool argIsFnArr = 0;
+					if(dyn_cast<PointerType>(*k))
+					{
+						argIsFnArr = dyn_cast<PointerType>(*k)->getElementType()->isFunctionTy();
+					}
+					if((*k)->isPointerTy() && !argIsFnArr)
+					{
+						//j->mutateType(Type::getInt128Ty(Ctx));
+						fnHasPtr = true;
+						fParamTypes.push_back(Type::getInt128Ty(Ctx));
+						//errs()<<**k<<"\n";
+					}
+					else
+						fParamTypes.push_back(*k);
+					//errs()<<"\npushed "<<*(fParamTypes.back());
+				}
+				if(!fnHasPtr)
+					continue;
+				FunctionType *fType = FunctionType::get(fRetType, fParamTypes, func.getFunctionType()->isVarArg());
+				Function *NF = Function::Create(fType, func.getLinkage(), func.getName());
+				NF->copyAttributesFrom(&func);
+				NF->getBasicBlockList().splice(NF->begin(), func.getBasicBlockList());
+				to_replace_functions.push(&func);
+				replace_with_functions.push(NF);
+				argCount.push(arg_index);
+			}
+			//errs()<<"HERE\n";
+
+			while(!to_replace_functions.empty())
+			{
+				Function *funcx = to_replace_functions.top();
+				Function *funcy = replace_with_functions.top();
+				int arg_index = argCount.top();
+				//errs()<<"\nto replace: "<<*funcx<<"\n";
+				to_replace_functions.pop();
+				replace_with_functions.pop();
+				argCount.pop();
+				M.getFunctionList().push_back(funcy);
+				while (!funcx->use_empty())
+				{
+					if(dyn_cast<CallInst>(funcx->user_back()))
+					{
+						//errs()<<"USER:\n"<<*(funcx->user_back())<<"\n";
+						CallSite CS(funcx->user_back());
+						std::vector< Value * > args(CS.arg_begin(), CS.arg_end());
+						Instruction *call = CS.getInstruction();
+						Instruction *new_call = NULL;
+						const AttributeList &call_attr = CS.getAttributes();
+						new_call = CallInst::Create(funcy, args, "", call);
+						CallInst *ci = cast< CallInst >(new_call);
+						ci->setCallingConv(CS.getCallingConv());
+						ci->setAttributes(call_attr);
+						if (ci->isTailCall())
+							ci->setTailCall();
+						new_call->setDebugLoc(call->getDebugLoc());
+						if (!call->use_empty())
+						{
+							call->replaceAllUsesWith(new_call);
+						}
+						new_call->takeName(call);
+						call->eraseFromParent();
+					}
+					else if(dyn_cast<StoreInst>(funcx->user_back()))
+					{
+						StoreInst *op = dyn_cast<StoreInst>(funcx->user_back());
+						//errs()<<"USER:\n"<<*(funcx->user_back())<<"\n";
+						//errs()<<*funcy->getType()->getPointerTo()<<"\n";
+						dyn_cast<StoreInst>(funcx->user_back())->setOperand(0,funcy);
+						//errs()<<*op->getOperand(1)<<"\n";
+						IntToPtrInst *op2;
+						if((op2 = dyn_cast<IntToPtrInst>(op->getOperand(1))))
+						{
+							op2->mutateType(funcy->getType()->getPointerTo());
+						}
+						//errs()<<*op<<"\n";
+					}
+					else
+					{
+						//errs()<<"UNKNOWN USER:\n"<<*(funcx->user_back())<<"\n";
+						continue;
+					}
+				}//
+
+				Function::arg_iterator arg_i2 = funcy->arg_begin();
+
+				for(Function::arg_iterator arg_i = funcx->arg_begin(), 
+					arg_e = funcx->arg_end(); arg_i != arg_e; ++arg_i)
+				{
+					arg_i->replaceAllUsesWith(arg_i2);
+					arg_i2->takeName(arg_i);
+					++arg_i2;
+					arg_index++;
+				}
+
+				//errs()<<"\n*************************************************\n";
+				//errs()<<funcy->getName()<<"\n-----\n"<<*(funcy->getFunctionType());
+				//errs()<<"\n*************************************************\n";
+				funcx->dropAllReferences();
+				funcx->removeFromParent();
+			}
+			#ifdef debug_spass
+				errs()<<"Fourth pass done\n";
+			#endif
+
+			// Fifth pass replaces pointers, store and load
 			for (auto &F : M)
 			{
 				DataLayout *D = new DataLayout(&M);
@@ -442,7 +582,10 @@ namespace {
 						}
 
 						else if (auto *op = dyn_cast<StoreInst>(I)) {
-							//errs()<<*op<<"\n";
+							//if(op->getParent()->getParent()->getName().contains("compressStream"))
+							//	if(op->getPrevNode() != NULL)
+							//		if(dyn_cast<CallInst>(op->getPrevNode()))
+							//			errs()<<*op<<"\n";
 							if(dyn_cast<ConstantPointerNull>(op->getOperand(0)))
 							{
 								//op->getOperand(0)->mutateType(Type::getInt128Ty(Ctx));
@@ -803,149 +946,12 @@ namespace {
 				//errs()<<"\n*************************************************\n";
 			}
 			#ifdef debug_spass
-				errs()<<"Fourth pass done\n";
-			#endif
-
-			// Fifth pass Fixes argument types in function calls within the module
-			Module::FunctionListType &functions = M.getFunctionList();
-			std::stack< Function * > to_replace_functions;
-			std::stack< Function * > replace_with_functions;
-			std::stack< int > argCount;
-
-			for (Module::FunctionListType::iterator it = functions.begin(), it_end = functions.end(); it != it_end; ++it)
-			{
-				//Function *func = dyn_cast<Function>(it);
-				Function &func = *it;
-
-				LLVMContext &Ctx = func.getContext();
-				if(func.isDeclaration())
-				{
-					//errs()<<"\n*****\nFound declaration:\n"<<func<<"\n*****\n";
-					continue;
-				}
-				//errs()<<"\n*****\nFound definition:\n"<<func<<"\n*****\n";
-
-				std::vector<Type*> fParamTypes;
-				bool fnHasPtr = false;
-				fnHasPtr = (func.getReturnType()->isPointerTy() ? true : false);
-
-				int arg_index = 0;
-
-				bool isFnArr = 0;
-				if(dyn_cast<PointerType>(func.getReturnType()))
-				{
-					isFnArr = dyn_cast<PointerType>(func.getReturnType())->getElementType()->isFunctionTy();
-				}
-
-				Type *fRetType = (func.getReturnType()->isPointerTy() && !(isFnArr) ? Type::getInt128Ty(Ctx) : func.getReturnType());
-				for(FunctionType::param_iterator k = (func.getFunctionType())->param_begin(), endp = (func.getFunctionType())->param_end(); k != endp; ++k)
-				{
-					arg_index++;
-					bool argIsFnArr = 0;
-					if(dyn_cast<PointerType>(*k))
-					{
-						argIsFnArr = dyn_cast<PointerType>(*k)->getElementType()->isFunctionTy();
-					}
-					if((*k)->isPointerTy() && !argIsFnArr)
-					{
-						//j->mutateType(Type::getInt128Ty(Ctx));
-						fnHasPtr = true;
-						fParamTypes.push_back(Type::getInt128Ty(Ctx));
-						//errs()<<**k<<"\n";
-					}
-					else
-						fParamTypes.push_back(*k);
-					//errs()<<"\npushed "<<*(fParamTypes.back());
-				}
-				if(!fnHasPtr)
-					continue;
-				FunctionType *fType = FunctionType::get(fRetType, fParamTypes, func.getFunctionType()->isVarArg());
-				Function *NF = Function::Create(fType, func.getLinkage(), func.getName());
-				NF->copyAttributesFrom(&func);
-				NF->getBasicBlockList().splice(NF->begin(), func.getBasicBlockList());
-				to_replace_functions.push(&func);
-				replace_with_functions.push(NF);
-				argCount.push(arg_index);
-			}
-			//errs()<<"HERE\n";
-
-			while(!to_replace_functions.empty())
-			{
-				Function *funcx = to_replace_functions.top();
-				Function *funcy = replace_with_functions.top();
-				int arg_index = argCount.top();
-				//errs()<<"\nto replace: "<<*funcx<<"\n";
-				to_replace_functions.pop();
-				replace_with_functions.pop();
-				argCount.pop();
-				M.getFunctionList().push_back(funcy);
-				while (!funcx->use_empty())
-				{
-					if(dyn_cast<CallInst>(funcx->user_back()))
-					{
-						//errs()<<"USER:\n"<<*(funcx->user_back())<<"\n";
-						CallSite CS(funcx->user_back());
-						std::vector< Value * > args(CS.arg_begin(), CS.arg_end());
-						Instruction *call = CS.getInstruction();
-						Instruction *new_call = NULL;
-						const AttributeList &call_attr = CS.getAttributes();
-						new_call = CallInst::Create(funcy, args, "", call);
-						CallInst *ci = cast< CallInst >(new_call);
-						ci->setCallingConv(CS.getCallingConv());
-						ci->setAttributes(call_attr);
-						if (ci->isTailCall())
-							ci->setTailCall();
-						new_call->setDebugLoc(call->getDebugLoc());
-						if (!call->use_empty())
-						{
-							call->replaceAllUsesWith(new_call);
-						}
-						new_call->takeName(call);
-						call->eraseFromParent();
-					}
-					else if(dyn_cast<StoreInst>(funcx->user_back()))
-					{
-						StoreInst *op = dyn_cast<StoreInst>(funcx->user_back());
-						//errs()<<"USER:\n"<<*(funcx->user_back())<<"\n";
-						//errs()<<*funcy->getType()->getPointerTo()<<"\n";
-						dyn_cast<StoreInst>(funcx->user_back())->setOperand(0,funcy);
-						//errs()<<*op->getOperand(1)<<"\n";
-						IntToPtrInst *op2;
-						if((op2 = dyn_cast<IntToPtrInst>(op->getOperand(1))))
-						{
-							op2->mutateType(funcy->getType()->getPointerTo());
-						}
-						//errs()<<*op<<"\n";
-					}
-					else
-					{
-						//errs()<<"UNKNOWN USER:\n"<<*(funcx->user_back())<<"\n";
-						continue;
-					}
-				}//
-
-				Function::arg_iterator arg_i2 = funcy->arg_begin();
-
-				for(Function::arg_iterator arg_i = funcx->arg_begin(), 
-					arg_e = funcx->arg_end(); arg_i != arg_e; ++arg_i)
-				{
-					arg_i->replaceAllUsesWith(arg_i2);
-					arg_i2->takeName(arg_i);
-					++arg_i2;
-					arg_index++;
-				}
-
-				//errs()<<"\n*************************************************\n";
-				//errs()<<funcy->getName()<<"\n-----\n"<<*(funcy->getFunctionType());
-				//errs()<<"\n*************************************************\n";
-				funcx->dropAllReferences();
-				funcx->removeFromParent();
-			}
-			#ifdef debug_spass
 				errs()<<"Fifth pass done\n";
 			#endif
 
-			//errs()<<"\n--------------\n"<<M<<"\n----------------\n";
+			#ifdef debug_spass_dmodule
+				errs()<<"\n--------------\n"<<M<<"\n----------------\n";
+			#endif
 			return modified;
 		}
 	};
