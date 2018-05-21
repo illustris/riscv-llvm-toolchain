@@ -418,8 +418,10 @@ namespace {
 				//errs()<<"\n*************************************************\n";
 				//errs()<<funcy->getName()<<"\n-----\n"<<*(funcy->getFunctionType());
 				//errs()<<"\n*************************************************\n";
+				StringRef tmp_name = funcx->getName();
 				funcx->dropAllReferences();
 				funcx->removeFromParent();
+				funcy->setName(tmp_name);
 			}
 			#ifdef debug_spass
 				errs()<<"Fourth pass done\n";
