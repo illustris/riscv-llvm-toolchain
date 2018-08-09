@@ -646,8 +646,29 @@ namespace {
 							{
 								//errs()<<*op->getOperand(0)<<"\n"<<*op->getOperand(0)->getType()<<"\n";
 								// if storing non-i128 object to a regular pointer, do nothing
+								//if storing non-i128 object to a i128* then create non-128 to i128
 								if(op->getOperand(0)->getType() != Type::getInt128Ty(Ctx))
 								{
+									//means storing a non-i128 object to i128*
+									if(dyn_cast<PointerType>(op->getOperand(1)->getType())->getElementType() == Type::getInt128Ty(Ctx)){
+										// do something here.
+										//craft fpr, store fpr
+										PtrToIntInst *trunc = new PtrToIntInst(op->getOperand(0), Type::getInt32Ty(Ctx),"pti1_",op);
+
+										std::vector<Value *> args;
+										args.push_back(trunc);//ptr
+										PtrToIntInst *ptr32 = new PtrToIntInst(rodata_cookie, Type::getInt32Ty(Ctx),"ptr32_1_",op);
+										args.push_back(ptr32);//base
+
+										args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),0));//TODO bound
+										args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),ro_hash));//hash
+										ArrayRef<Value *> args_ref(args);
+
+										IRBuilder<> Builder(I);
+										Builder.SetInsertPoint(op);
+										Value *fpr = Builder.CreateCall(craftFunc, args_ref,op->getName()+"fprz");
+										op->setOperand(0,fpr);
+									}
 									continue;
 								}
 								//else if storing i128 to i128*, do nothing
