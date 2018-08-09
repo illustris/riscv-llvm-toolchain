@@ -11,7 +11,7 @@
 #include "llvm/IR/CallSite.h"
 #include <stack>
 #include <map>
-
+#include <set>
 //#define debug_spass
 //#define debug_spass_dmodule
 
@@ -29,6 +29,50 @@ namespace {
 
 		virtual bool runOnModule(Module &M)
 		{
+
+
+			/* before doing anything check whether pointer decrements are there or not in any function. */
+			std::set<std::string> func_name;
+			for (auto &F : M){
+				if (!F.isDeclaration()) {
+					for (auto &B : F){
+						for (auto &I : B){
+							if(GetElementPtrInst *GI = dyn_cast<GetElementPtrInst>(&I)){
+								if(ConstantInt *CI = dyn_cast<ConstantInt>(GI->getOperand(1))){
+									if(CI->isNegative()){
+
+										//errs() << "!!!!!!!!!!!Warning Pointer Decrement in function  : " << F.getName() << "!!!!!!!!!!!!!!!!!!!\n" ;
+										//errs() << *GI->getOperand(0) << "\n" ;
+										func_name.insert(F.getName());
+
+									}
+								}else{
+									if(Instruction *I = dyn_cast<Instruction>(GI->getOperand(1))){
+										if(I->getOpcode() == Instruction::Sub){
+
+											//errs() << "!!!!!!!!!!!Warning Pointer Decrement in function  : " << F.getName() << "!!!!!!!!!!!!!!!!!!!\n" ;
+											//errs() << *GI->getOperand(0) << "\n" ;
+											func_name.insert(F.getName());
+										}
+									}
+								}
+
+							}
+						}
+					}
+				}
+			}
+			if(!func_name.empty()) {
+				errs () << " !!!!!!!!!!! Warning Pointer Decrement in function " ;
+				std::set<std::string>:: iterator itr;
+				for (itr = func_name.begin(); itr != func_name.end(); ++itr)
+			    {
+			        errs() << *itr << " " ;
+			    }
+			    errs() << " !!!!!!!!!!!!!!!!!!! \n" ;
+			}
+			/*checking for pointer decrement ends here .*/
+
 			bool modified=false;
 
 			unsigned long long ro_cook = 0xdeadbeef1337c0d3;
@@ -597,6 +641,7 @@ namespace {
 							}
 							//This happens when trying to store fatpointers to pinters inside special structs
 							//errs()<<"*********\n"<<*op<<"\n"<<*op->getOperand(1)<<"\n"<<*op->getOperand(1)->getType()<<"\nxxxxxxxx\n";
+
 							if(op->getOperand(1)->getType() != Type::getInt128Ty(Ctx))
 							{
 								//errs()<<*op->getOperand(0)<<"\n"<<*op->getOperand(0)->getType()<<"\n";
@@ -1105,6 +1150,7 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 
 	return Offset;
 }
+
 
 char shaktiPass::ID = 0;
 static RegisterPass<shaktiPass> X("t", "Shakti-T transforms");
