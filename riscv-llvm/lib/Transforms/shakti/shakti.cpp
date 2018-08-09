@@ -908,6 +908,26 @@ namespace {
 										{
 											op->setOperand(i,llvm::ConstantInt::get(Type::getInt128Ty(Ctx),0));
 										}
+										//check if it is not a declaration and i8* of getelement ptr or not
+										if(!op->getCalledFunction()->isDeclaration() && dyn_cast<GEPOperator>(op->getOperand(i))){
+											//errs() << "get element ptr operator : \n" << *op << "\n" << *op->getOperand(i) << "\n------------------------------------------------------\n";
+
+											PtrToIntInst *trunc = new PtrToIntInst(op->getOperand(i), Type::getInt32Ty(Ctx),"pti1_",op);
+											std::vector<Value *> args;
+											args.push_back(trunc);//ptr
+											PtrToIntInst *ptr32 = new PtrToIntInst(rodata_cookie, Type::getInt32Ty(Ctx),"ptr32_1_",op);
+											args.push_back(ptr32);//base
+
+											args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),0));//TODO bound
+											args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),ro_hash));//hash
+											ArrayRef<Value *> args_ref(args);
+
+											IRBuilder<> Builder(I);
+											Builder.SetInsertPoint(op);
+											Value *fpr = Builder.CreateCall(craftFunc, args_ref,op->getName()+"fprz");
+											op->setOperand(i,fpr);
+
+										}
 									}
 								}
 							}
