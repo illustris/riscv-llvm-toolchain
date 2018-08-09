@@ -927,6 +927,56 @@ namespace {
 							//errs()<<*op<<"\n";
 							for(unsigned int i=0;i<op->getNumOperands()-1;i++)
 							{
+								//if you are using a global pointer in printf scanf or other system calls then collapse that pointer to i8* or to the required pointer type before calling.
+								if(op->getCalledFunction()!=NULL && (!op->getCalledFunction()->isIntrinsic()) ) { //&& op->getCalledFunction()->isDeclaration() -- not required as it will readh here only if its a declaration
+										if(op->getOperand(i)->getType() == Type::getInt128Ty(Ctx)){
+											//errs() <<  "before : " << *op << "\n" ;
+											//truncte to i8* and then pass to the function
+
+											//validate the pointer 
+											TruncInst *tr_lo = new TruncInst(op->getOperand(i), Type::getInt64Ty(Ctx),"fpr_low", op);
+											Value* shamt = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),64);
+											BinaryOperator *shifted =  BinaryOperator::Create(Instruction::LShr, op->getOperand(i), shamt , "fpr_hi_big", op);
+											TruncInst *tr_hi = new TruncInst(shifted, Type::getInt64Ty(Ctx),"fpr_hi", op);
+
+											// Set up intrinsic arguments
+											std::vector<Value *> args;
+
+											args.push_back(tr_hi);
+											args.push_back(tr_lo);
+											ArrayRef<Value *> args_ref(args);
+
+											// Create call to intrinsic
+											IRBuilder<> Builder(I);
+											Builder.SetInsertPoint(I);
+											Builder.CreateCall(val, args_ref,"");
+
+											//validating the pointer done
+											//type cast to i8* 
+											Type *ptype = Type::getInt8PtrTy(Ctx);
+											if(op->getCalledFunction() != NULL)
+											{
+												if(!op->getCalledFunction()->isVarArg())
+												{
+													ptype = op->getCalledFunction()->getFunctionType()->params()[i];
+												}
+												else if(i < op->getCalledFunction()->getFunctionType()->params().size())
+												{
+													ptype = op->getCalledFunction()->getFunctionType()->params()[i];
+												}
+											}
+
+											Value* mask = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0x7fffffff);
+											BinaryOperator *ptr32 =  BinaryOperator::Create(Instruction::And, tr_lo, mask , "ptr32_", op);
+
+											IntToPtrInst *ptr = new IntToPtrInst(ptr32,ptype,"ptrc",op);
+
+											op->setOperand(i,ptr);
+											op->getOperand(i)->mutateType(ptype);
+											continue;
+											//errs() <<  "after : " << *op << "\n" ;
+										}
+								}
 								//if(op->getCalledFunction()->getName() == "fprintf")
 								//errs()<<"op "<<i<<".\t"<<*op->getOperand(i)<<"\n";
 								if(!op->getOperand(i)->getName().contains("arrayidx") && !op->getOperand(i)->getName().contains("fpr") && !op->getOperand(i)->getName().contains("fpld"))
