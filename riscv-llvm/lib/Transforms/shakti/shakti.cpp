@@ -994,6 +994,26 @@ namespace {
 								{
 									op->setOperand(1,llvm::ConstantInt::get(Type::getInt128Ty(Ctx),0));
 								}
+								//if operand(1) is of type i8* and operand(0) of type i128
+								else if(op->getOperand(1)->getType()->isPointerTy()){
+									//errs() << "Here.....\n" ;
+									//errs() << *op->getOperand(1) << "\n" ;
+									PtrToIntInst *trunc = new PtrToIntInst(op->getOperand(1), Type::getInt32Ty(Ctx),"pti1_",op);
+
+									std::vector<Value *> args;
+									args.push_back(trunc);//ptr
+									PtrToIntInst *ptr32 = new PtrToIntInst(rodata_cookie, Type::getInt32Ty(Ctx),"ptr32_1_",op);
+									args.push_back(ptr32);//base
+
+									args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),0));//TODO bound
+									args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),ro_hash));//hash
+									ArrayRef<Value *> args_ref(args);
+
+									IRBuilder<> Builder(I);
+									Builder.SetInsertPoint(op);
+									Value *fpr = Builder.CreateCall(craftFunc, args_ref,op->getName()+"fprz");
+									op->setOperand(1,fpr);
+								}
 							}
 						}
 						else if (auto *op = dyn_cast<PtrToIntInst>(I))
