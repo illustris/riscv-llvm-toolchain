@@ -5,6 +5,9 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/LLVMContext.h"
+#include "llvm/IR/DebugInfo.h"
+#include "llvm/IR/DebugInfoMetadata.h"
+#include "llvm/Support/Debug.h"
 #include <set>
 
 using namespace llvm;
@@ -85,15 +88,23 @@ int Pointer_dec::checkPointerDec(Function &F) {
 				//errs() << *(GI->getOperand(0)) << "\n" ;
 				//errs() << *(GI->getOperand(1)) << "\n" ; //returns the 2nd parameter . i.e. i32 -1 or i64 %idx.ext 
 
+
+				//getting line number for Getelementptr
+				DILocation *Loc = GI->getDebugLoc();
+				unsigned int Line = Loc->getLine();
+
+
 				if(ConstantInt *CI = dyn_cast<ConstantInt>(GI->getOperand(1))){
 					if(CI->isNegative()){
 						//errs() << "Pointer Decrement \n" ;
+						errs() << "!!!!!!!!!!!Warning Pointer Decrement in line no : " << Line << "!!!!!!!!!!!!!!!!!!!\n" ;
 						count_ptr_dec++;
 					}
 				}else{
 					if(Instruction *I = dyn_cast<Instruction>(GI->getOperand(1))){
 						if(I->getOpcode() == Instruction::Sub){
 							//errs() << "Pointer decrement \n" ;
+							errs() << "!!!!!!!!!!!!!!! Warning Pointer Decrement in line no : " << Line-1 << "!!!!!!!!!!!!!!\n" ;
 							count_ptr_dec++;
 						}
 					}
