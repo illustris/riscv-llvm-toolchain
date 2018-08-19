@@ -13,7 +13,7 @@
 #include <map>
 #include <set>
 //#define debug_spass
-//#define debug_spass_dmodule
+#define debug_spass_dmodule
 
 using namespace llvm;
 
@@ -592,6 +592,11 @@ namespace {
 								continue;
 							}
 
+							//do not create a fat pointer if its a normal integer or float or double . 
+							if(!op->getAllocatedType()->isIntegerTy(128) && (op->getAllocatedType()->isFloatTy() || op->getAllocatedType()->isDoubleTy() || op->getAllocatedType()->isIntegerTy())){
+								continue;
+							}
+
 							PtrToIntInst *trunc = new PtrToIntInst(op, Type::getInt32Ty(Ctx),"pti",op->getNextNode());
 
 							std::vector<Value *> args;
@@ -928,9 +933,10 @@ namespace {
 										if(dyn_cast<ConstantPointerNull>(op->getOperand(i)))
 										{
 											op->setOperand(i,llvm::ConstantInt::get(Type::getInt128Ty(Ctx),0));
+											continue;
 										}
 										//check if it is not a declaration and i8* of getelement ptr or not
-										if(!op->getCalledFunction()->isDeclaration() && dyn_cast<GEPOperator>(op->getOperand(i))){
+										if(!op->getCalledFunction()->isDeclaration() ){
 											//errs() << "get element ptr operator : \n" << *op << "\n" << *op->getOperand(i) << "\n------------------------------------------------------\n";
 
 											PtrToIntInst *trunc = new PtrToIntInst(op->getOperand(i), Type::getInt32Ty(Ctx),"pti1_",op);
