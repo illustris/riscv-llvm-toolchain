@@ -1198,8 +1198,14 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 	Value *Offset,*temp;
 	int c = 0;
 	bool isconstant = true;
-	if(ConstantInt *CI = dyn_cast<ConstantInt>(GI->getOperand(GI->getNumOperands()-1)))// get the last operand of the getelementptr
+	bool isNeg = false;
+	if(ConstantInt *CI = dyn_cast<ConstantInt>(GI->getOperand(GI->getNumOperands()-1))){// get the last operand of the getelementptr
 		c = CI->getZExtValue ();
+		if(c < 0){
+			c = c * -1;
+			isNeg = true;
+		}
+	}
 	else
 	{
 		//suppose the last index was not a constant then set 'c' to some special value and get the last operand.
@@ -1213,7 +1219,10 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 	if(StructType *t = dyn_cast<StructType>(type))
 	{	//check for struct type
 		const StructLayout *SL = D->getStructLayout(t);
-		offset+= SL->getElementOffset(c);
+		if(!isNeg)
+			offset+= SL->getElementOffset(c);
+		else
+			offset+= c*SL->getSizeInBytes() ; 
 	}
 	else if(ArrayType *t = dyn_cast<ArrayType>(type))
 	{
@@ -1272,6 +1281,9 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 		else
 			offset+=c*D->getTypeAllocSize(type);
 	}
+
+	if(isNeg)
+		offset = offset*-1;
 
 	if(isconstant)
 		Offset = llvm::ConstantInt::get(Type::getInt32Ty(Context),offset);
