@@ -376,6 +376,15 @@ namespace {
 						fnHasPtr = true;
 						fParamTypes.push_back(Type::getInt128Ty(Ctx));
 						//errs()<<**k<<"\n";
+
+						//if the function returns a structure then remove its attributes. 
+						//struct return is basically function argument 1 in llvm IR
+						if(func.hasStructRetAttr()){
+							//errs() << "Struct type detected . so remove all attributes\n" ;
+							AttributeList AL = func.getAttributes();
+							AttributeList A = AL.removeParamAttributes(Ctx,0);
+							func.setAttributes(A);
+						}
 					}
 					else
 						fParamTypes.push_back(*k);
@@ -447,7 +456,6 @@ namespace {
 						continue;
 					}
 				}//
-
 				Function::arg_iterator arg_i2 = funcy->arg_begin();
 
 				for(Function::arg_iterator arg_i = funcx->arg_begin(), 
@@ -963,6 +971,12 @@ namespace {
 								if(!(op->getCalledFunction()->isDeclaration())) // skip if definition exists in module
 								{
 									//errs()<<"\n=************************************************\n";
+
+									//if the function 1st paramter type is i128 then remove all attribuetes of the parameter
+									//this is a problem for returning structs.
+									AttributeList AL = op->getAttributes();
+									AttributeList A = AL.removeParamAttributes(Ctx,0);
+									op->setAttributes(A);
 									continue;
 								}
 								if(op->getCalledFunction()->getName().contains("safefree"))
@@ -975,7 +989,7 @@ namespace {
 							for(unsigned int i=0;i<op->getNumOperands()-1;i++)
 							{
 								//if you are using a global pointer in printf scanf or other system calls then collapse that pointer to i8* or to the required pointer type before calling.
-								if(op->getCalledFunction()!=NULL && (!op->getCalledFunction()->isIntrinsic()) ) { //&& op->getCalledFunction()->isDeclaration() -- not required as it will readh here only if its a declaration
+								if(op->getCalledFunction()!=NULL ) { //&& (!op->getCalledFunction()->isIntrinsic()) //&& op->getCalledFunction()->isDeclaration() -- not required as it will readh here only if its a declaration
 										if(op->getOperand(i)->getType() == Type::getInt128Ty(Ctx)){
 											//errs() <<  "before : " << *op << "\n" ;
 											//truncte to i8* and then pass to the function
@@ -1160,7 +1174,6 @@ namespace {
 						}
 						//errs()<<*I;
 						//errs()<<"\n--------\n";
-
 					}
 				}
 				//errs()<<"\n*************************************************\n";
@@ -1185,7 +1198,6 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 	Value *Offset,*temp;
 	int c = 0;
 	bool isconstant = true;
-
 	if(ConstantInt *CI = dyn_cast<ConstantInt>(GI->getOperand(GI->getNumOperands()-1)))// get the last operand of the getelementptr
 		c = CI->getZExtValue ();
 	else
@@ -1198,7 +1210,6 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 	}
 
 	Type *type = GI->getSourceElementType(); //get the type of getelementptr
-
 	if(StructType *t = dyn_cast<StructType>(type))
 	{	//check for struct type
 		const StructLayout *SL = D->getStructLayout(t);
@@ -1264,6 +1275,7 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 
 	if(isconstant)
 		Offset = llvm::ConstantInt::get(Type::getInt32Ty(Context),offset);
+
 
 	return Offset;
 }
