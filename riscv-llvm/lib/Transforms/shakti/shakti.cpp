@@ -280,8 +280,20 @@ namespace {
 			dyn_cast<Function>(freeFunc)->removeFromParent();//*/
 
 			// Third pass adds stack cookie
+			//place the stack cookie below every variable available on stack
+			//then in fifth pass when you encounter alloca's then craft fatpointer belwo this 
+			Instruction *FPR;
+			TruncInst *ptr_to_st_hash;
+			PtrToIntInst *ptr_to_st_cook;
+
+			std::map<std::string,std::vector<Instruction *>> mapInst;
+
 			for (auto &F : M)
 			{
+				if(F.isDeclaration())
+					continue;
+				Instruction *AI,*RI;
+				bool stack_cook_ins = false,flag = false;
 				LLVMContext &Ctx = F.getContext();
 				Module *m = F.getParent();
 				Function *hash = Intrinsic::getDeclaration(m, Intrinsic::riscv_hash);	// get hash intrinsic declaration
@@ -290,10 +302,30 @@ namespace {
 				{
 					if(&B == &((&F)->front()))
 					{	// If BB is first
-						Instruction *I = &((&B)->front());	// Get first instruction in function
-						st_cook = new AllocaInst(Type::getInt64Ty(Ctx), 0,"stack_cookie", I);	// alloca stack cookie
-						new PtrToIntInst(st_cook,Type::getInt32Ty(Ctx), "stack_cookie_32", I);
-						//new TruncInst(st_cook_int, Type::getInt32Ty(Ctx),"stack_cookie_32", I);
+
+						AI = &((&B)->front());	// Get first instruction in function
+					}
+
+					for (auto &I : B){	// Iterate over instructions to get the last Alloca and Return Inst
+						if (dyn_cast<AllocaInst>(&I) && !stack_cook_ins)
+						{
+							AI = &I;
+							flag = true;
+						}
+						else if (dyn_cast<ReturnInst>(&I))
+						{	// If return instruction
+							RI = &I;
+						}
+					}
+					if(!stack_cook_ins){
+						if(flag)
+							FPR = AI->getNextNode();	//that means there is a alloca so go to next instruction and then insert before it
+						else
+							FPR = AI; //no alloca inst is there. only printf. then insert before printf
+
+						//errs() << *I << "\n" ;
+						st_cook = new AllocaInst(Type::getInt64Ty(Ctx), 0,"stack_cookie", FPR);	// alloca stack cookie
+						ptr_to_st_cook = new PtrToIntInst(st_cook,Type::getInt32Ty(Ctx), "stack_cookie_32", FPR);
 
 						// Set up intrinsic arguments
 						std::vector<Value *> args;
@@ -301,30 +333,32 @@ namespace {
 						ArrayRef<Value *> args_ref(args);
 
 						// Create call to intrinsic
-						IRBuilder<> Builder(I);
-						Builder.SetInsertPoint(I);
+						IRBuilder<> Builder(FPR);
+						Builder.SetInsertPoint(FPR);
 						Value *hash64 = Builder.CreateCall(hash, args_ref,"stack_hash_long");
-						new TruncInst(hash64, Type::getInt32Ty(Ctx),"stack_hash", I);
-						modified = true;
-
+						ptr_to_st_hash = new TruncInst(hash64, Type::getInt32Ty(Ctx),"stack_hash", FPR);
+						stack_cook_ins = true;
+						modified  = true;
+						//errs() << "Stack Cookiner Inserted \n" ;
 					}
-
-					for (auto &I : B)	// Iterate over instructions
-						if (dyn_cast<ReturnInst>(&I))
-						{	// If return instruction
-
-							// set up arguments
-							std::vector<Value *> args;
-							args.push_back(st_cook);
-							ArrayRef<Value *> args_ref(args);
-
-							// Call hash again to burn cookie
-							IRBuilder<> Builder(&I);
-							Builder.SetInsertPoint(&I);
-							Builder.CreateCall(hash, args_ref,"stack_cookie_burn");
-							modified = true;
-						}
 				}
+				//set up arguments
+				std::vector<Value *> args;
+				args.push_back(st_cook);
+				ArrayRef<Value *> args_ref(args);
+
+				//Call hash again to burn the cookie
+				IRBuilder<> Builder(RI);
+				Builder.SetInsertPoint(RI);
+				Builder.CreateCall(hash, args_ref,"stack_cookie_burn");
+				//errs() << "Adding done in function " << F.getName() << "\n" ;
+
+				std::vector<Instruction *> storeInsPoint;
+				storeInsPoint.push_back(FPR);
+				storeInsPoint.push_back(ptr_to_st_cook);
+				storeInsPoint.push_back(ptr_to_st_hash);
+				mapInst.insert(std::pair<std::string,std::vector<Instruction *>>(F.getName(),storeInsPoint));
+
 			}
 			#ifdef debug_spass
 				errs()<<"Third pass done\n";
@@ -480,6 +514,7 @@ namespace {
 			#endif
 
 			// Fifth pass replaces pointers, store and load
+			//check the value of ptr_to_st_cook and ptr_to_st_hash
 			for (auto &F : M)
 			{
 				DataLayout *D = new DataLayout(&M);
@@ -489,11 +524,18 @@ namespace {
 				Type *craftRetType = Type::getInt128Ty(Ctx);
 				FunctionType *craftFuncType = FunctionType::get(craftRetType, craftParamTypes, false);
 				Value *craftFunc = F.getParent()->getOrInsertFunction("craft", craftFuncType);
-				TruncInst *st_hash;
-				PtrToIntInst *st_cook;
 
 				if(F.isDeclaration())
 					continue;
+
+				std::vector<Instruction *> getData = mapInst.find(F.getName())->second;
+				if(getData.empty()){
+					errs() << "Something is wrong with this function \n"  ;
+					continue;
+				}
+				Instruction *insertPoint = getData[0];
+				ptr_to_st_cook = dyn_cast<PtrToIntInst>(getData[1]);
+				ptr_to_st_hash = dyn_cast<TruncInst>(getData[2]);
 
 				for(Function::arg_iterator j = F.arg_begin(), end = F.arg_end(); j != end; ++j)
 				{
@@ -537,7 +579,7 @@ namespace {
 								op->setAllocatedType(Type::getInt128Ty(Ctx));
 								op->mutateType(Type::getIntNPtrTy(Ctx,128));
 								/*for (auto &U : op->uses())
-								{
+								*{
 									if(!flag)
 									{
 										flag = true;
@@ -595,8 +637,8 @@ namespace {
 
 							if (op->getName() == "stack_cookie")
 							{
-								st_cook = dyn_cast<PtrToIntInst>(op->getNextNode());
-								st_hash = dyn_cast<TruncInst>(op->getNextNode()->getNextNode()->getNextNode());
+								//ptr_to_st_cook = dyn_cast<PtrToIntInst>(op->getNextNode());
+								//ptr_to_st_hash = dyn_cast<TruncInst>(op->getNextNode()->getNextNode()->getNextNode());
 								continue;
 							}
 
@@ -605,11 +647,12 @@ namespace {
 								continue;
 							}
 
-							PtrToIntInst *trunc = new PtrToIntInst(op, Type::getInt32Ty(Ctx),"pti",op->getNextNode());
+							//PtrToIntInst *trunc = new PtrToIntInst(op, Type::getInt32Ty(Ctx),"pti",op->getNextNode());
+							PtrToIntInst *trunc = new PtrToIntInst(op, Type::getInt32Ty(Ctx),"pti",insertPoint);
 
 							std::vector<Value *> args;
 							args.push_back(trunc);
-							args.push_back(st_cook);
+							args.push_back(ptr_to_st_cook);
 							if(dyn_cast<ConstantInt>(op->getArraySize()))
 								args.push_back(
 									llvm::ConstantInt::get(
@@ -619,15 +662,16 @@ namespace {
 								);
 							else
 							{
-								BinaryOperator *total_off =  BinaryOperator::Create(Instruction::Mul, op->getArraySize(), llvm::ConstantInt::get(Type::getInt64Ty(Ctx),(D->getTypeAllocSize(op->getAllocatedType()))) , "off", op);
-								TruncInst *total_off_trunc = new TruncInst(total_off, Type::getInt32Ty(Ctx),"offt", op);
+								BinaryOperator *total_off =  BinaryOperator::Create(Instruction::Mul, op->getArraySize(), llvm::ConstantInt::get(Type::getInt64Ty(Ctx),(D->getTypeAllocSize(op->getAllocatedType()))) , "off", insertPoint);
+								TruncInst *total_off_trunc = new TruncInst(total_off, Type::getInt32Ty(Ctx),"offt", insertPoint);
 								args.push_back(total_off_trunc);
 							}
-							args.push_back(st_hash);
+							args.push_back(ptr_to_st_hash);
 							ArrayRef<Value *> args_ref(args);
 
-							IRBuilder<> Builder(I);
-							Builder.SetInsertPoint(trunc->getNextNode());
+							IRBuilder<> Builder(insertPoint);
+							//Builder.SetInsertPoint(trunc->getNextNode());
+							Builder.SetInsertPoint(insertPoint);
 							Value *fpr = Builder.CreateCall(craftFunc, args_ref,op->getName()+"fpr");
 
 							std::stack <User *> users;
