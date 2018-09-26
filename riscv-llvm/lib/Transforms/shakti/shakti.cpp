@@ -91,12 +91,40 @@ namespace {
 				{
 					Type *ty = dyn_cast<Type>(*i);
 					//errs()<<*ty<<"\n";
+					bool isFnArr = false;
+					//if element type is of function pointers then dont make any changes.
+					if(dyn_cast<PointerType>(ty)){
+						isFnArr = dyn_cast<PointerType>(ty)->getElementType()->isFunctionTy();
+					}
 					if(ty->isPointerTy())
 					{
-						//**i->mutateType(Type::getInt128Ty(GCtx));
-						elems_vec.push_back(Type::getInt128Ty(GCtx));
+						//convert normal pointers to i128 leave function pointers.
+						//but check each elements of function pointers and if they have pointers then convert them to i128
+						if(!isFnArr){
+							elems_vec.push_back(Type::getInt128Ty(GCtx));
+						}else{
+							FunctionType *func_type = dyn_cast<FunctionType>(dyn_cast<PointerType>(ty)->getElementType());
+							std::vector<Type*> fParamTypes;
+
+							Type *func_ret_type = func_type->getReturnType();
+							Type *fRetType = (func_type->getReturnType()->isPointerTy() && !(dyn_cast<PointerType>(func_ret_type)->getElementType()->isFunctionTy()) ? Type::getInt128Ty(GCtx) : func_ret_type);
+							for(FunctionType::param_iterator k = func_type->param_begin(), endp = func_type->param_end(); k != endp; ++k){
+								bool argIsFnArr = 0;
+								if(dyn_cast<PointerType>(*k)){
+									argIsFnArr = dyn_cast<PointerType>(*k)->getElementType()->isFunctionTy();
+								}
+								if((*k)->isPointerTy() && !argIsFnArr){
+									fParamTypes.push_back(Type::getInt128Ty(GCtx));
+								}
+								else
+									fParamTypes.push_back(*k);
+							}
+							FunctionType *newFuncType = FunctionType::get(fRetType,fParamTypes,func_type->isVarArg());
+							//errs() << "new function type : " << *newFuncType->getPointerTo() << "\n" ;
+							Type *newType = newFuncType->getPointerTo() ;
+							elems_vec.push_back(newType);
+						}
 						flag = 1;
-						//errs()<<ty<<"\n";
 					}
 					/*else if(ty->isArrayTy())
 					{
@@ -565,17 +593,50 @@ namespace {
 								op->setAllocatedType(rep_structs.at(dyn_cast<StructType>(op->getAllocatedType())));
 								//errs()<<*op->getAllocatedType()<<"\n";
 							}
-
+							modified=true;
 							if(op->getAllocatedType()->isFunctionTy())
 							{
 								//errs()<<"Ignoring function pointer "<<*op<<"\n";
 								continue;
 							}
-							modified=true;
 							//errs()<<"\n-----------\nAlloca:\t"<<*op<<"\n-----------\n";
-							if(op->getAllocatedType()->isPointerTy())
+						 	else if(op->getAllocatedType()->isPointerTy())
 							{
 								//errs()<<"\n-----------\nptrAlloca:\t"<<*op<<"\n-----------\n";
+								bool isFnArr = false;
+								isFnArr = dyn_cast<PointerType>(op->getAllocatedType())->getElementType()->isFunctionTy();
+
+								if(isFnArr){
+
+									FunctionType *func_type = dyn_cast<FunctionType>(dyn_cast<PointerType>(op->getAllocatedType())->getElementType());
+									std::vector<Type*> fParamTypes;
+
+									//errs() << "function type : " << *func_type << "\n";
+									Type *func_ret_type = func_type->getReturnType();
+									Type *fRetType = (func_type->getReturnType()->isPointerTy() && !(dyn_cast<PointerType>(func_ret_type)->getElementType()->isFunctionTy()) ? Type::getInt128Ty(Ctx) : func_ret_type);
+									for(FunctionType::param_iterator k = func_type->param_begin(), endp = func_type->param_end(); k != endp; ++k){
+										//errs() << **k << "\n";
+										bool argIsFnArr = 0;
+										if(dyn_cast<PointerType>(*k))
+										{
+											argIsFnArr = dyn_cast<PointerType>(*k)->getElementType()->isFunctionTy();
+										}
+										if((*k)->isPointerTy() && !argIsFnArr)
+										{
+											//fnHasPtr = true;
+											fParamTypes.push_back(Type::getInt128Ty(Ctx));
+										}
+										else
+											fParamTypes.push_back(*k);
+									}
+//									FunctionType *fType =       FunctionType::get(fRetType, fParamTypes, func.getFunctionType()->isVarArg());
+									FunctionType *newFuncType = FunctionType::get(fRetType,fParamTypes,func_type->isVarArg());
+									//errs() << "new function type : " << *newFuncType->getPointerTo() << "\n" ;
+									Type *newType = newFuncType->getPointerTo() ;
+									op->setAllocatedType(newType);
+									op->mutateType(newType);
+									continue;
+								}
 								op->setAllocatedType(Type::getInt128Ty(Ctx));
 								op->mutateType(Type::getIntNPtrTy(Ctx,128));
 								/*for (auto &U : op->uses())
@@ -634,7 +695,6 @@ namespace {
 								}
 								//errs()<<*op<<"\n";
 							}
-
 							if (op->getName() == "stack_cookie")
 							{
 								//ptr_to_st_cook = dyn_cast<PtrToIntInst>(op->getNextNode());
@@ -674,8 +734,8 @@ namespace {
 							Builder.SetInsertPoint(insertPoint);
 							Value *fpr = Builder.CreateCall(craftFunc, args_ref,op->getName()+"fpr");
 
-							std::stack <User *> users;
-							std::stack <int> pos;
+							//std::stack <User *> users;
+							//std::stack <int> pos;
 
 							// Replace all uses of pointer with fatpointer
 							op->replaceAllUsesWith(fpr);
@@ -716,7 +776,6 @@ namespace {
 										args.push_back(trunc);//ptr
 										PtrToIntInst *ptr32 = new PtrToIntInst(rodata_cookie, Type::getInt32Ty(Ctx),"ptr32_1_",op);
 										args.push_back(ptr32);//base
-
 										args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),0));//TODO bound
 										args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),ro_hash));//hash
 										ArrayRef<Value *> args_ref(args);
@@ -725,6 +784,11 @@ namespace {
 										Builder.SetInsertPoint(op);
 										Value *fpr = Builder.CreateCall(craftFunc, args_ref,op->getName()+"fprz");
 										op->setOperand(0,fpr);
+									}
+									if(dyn_cast<PointerType>(op->getOperand(1)->getType())->getElementType()->isFunctionTy()){
+										Type *storeptrtype = op->getOperand(1)->getType()->getPointerTo(); 
+										//errs() << "store pointer type : " << *storeptrtype << "\n" ;
+										op->getOperand(1)->mutateType(storeptrtype);
 									}
 									continue;
 								}
@@ -780,7 +844,6 @@ namespace {
 										args.push_back(trunc);//ptr
 										PtrToIntInst *ptr32 = new PtrToIntInst(rodata_cookie, Type::getInt32Ty(Ctx),"ptr32_1_",op);
 										args.push_back(ptr32);//base
-
 										args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),0));//TODO bound
 										args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),ro_hash));//hash
 										ArrayRef<Value *> args_ref(args);
@@ -846,9 +909,26 @@ namespace {
 								continue;
 							}
 							//errs()<<*op<<"\t"<<*op->getOperand(0)<<"\n";
-							if(op->getOperand(0)->getType() != Type::getInt128Ty(Ctx))
-								continue;
+							if(op->getOperand(0)->getType() != Type::getInt128Ty(Ctx)){
 
+								//errs() << "load inst : " << *op->getOperand(0)->getType() << "\n" ;
+								Type *base_type = op->getOperand(0)->getType() ;
+								int depth = 0;
+								while(dyn_cast<PointerType>(base_type)){
+									base_type = base_type->getPointerElementType();
+									depth++;
+								}
+								//errs() << "final base type : " << *base_type << "\n-------------------------\n" ;
+								depth--;
+								if(base_type->isFunctionTy()){
+									while(depth){
+										base_type  = base_type->getPointerTo();
+										depth--;
+									}
+									op->mutateType(base_type);
+								}
+								continue;
+							}
 							modified = true;
 							TruncInst *tr_lo = new TruncInst(op->getOperand(0), Type::getInt64Ty(Ctx),"fpr_low", op);	// alloca stack cookie
 							Value* shamt = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),64);
@@ -875,9 +955,40 @@ namespace {
 								//errs()<<"LOADTYPE: "<<*loadtype<<"IsFn: "<<isFnArr<<"\n";
 							}
 
-							if (loadtype->isPointerTy() && !(isFnArr))
+							if (loadtype->isPointerTy())
 							{
-								loadtype = Type::getInt128Ty(Ctx);
+								if(!isFnArr){
+									loadtype = Type::getInt128Ty(Ctx);
+									//op->mutateType(loadtype);
+								}else{
+									//check elements of function type and change any pointer to i128
+									FunctionType *func_type = dyn_cast<FunctionType>(dyn_cast<PointerType>(loadtype)->getElementType()) ;
+									std::vector<Type*> fParamTypes;
+
+									//errs() << "function type : " << *func_type << "\n";
+									Type *func_ret_type = func_type->getReturnType();
+									Type *fRetType = (func_type->getReturnType()->isPointerTy() && !(dyn_cast<PointerType>(func_ret_type)->getElementType()->isFunctionTy()) ? Type::getInt128Ty(Ctx) : func_ret_type);
+									for(FunctionType::param_iterator k = func_type->param_begin(), endp = func_type->param_end(); k != endp; ++k){
+										//errs() << **k << "\n";
+										bool argIsFnArr = 0;
+										if(dyn_cast<PointerType>(*k))
+										{
+											argIsFnArr = dyn_cast<PointerType>(*k)->getElementType()->isFunctionTy();
+										}
+										if((*k)->isPointerTy() && !argIsFnArr)
+										{
+											//fnHasPtr = true;
+											fParamTypes.push_back(Type::getInt128Ty(Ctx));
+										}
+										else
+											fParamTypes.push_back(*k);
+									}
+//									FunctionType *fType =       FunctionType::get(fRetType, fParamTypes, func.getFunctionType()->isVarArg());
+									FunctionType *newFuncType = FunctionType::get(fRetType,fParamTypes,func_type->isVarArg());
+									//errs() << "new function type : " << *newFuncType->getPointerTo() << "\n" ;
+									Type *newType = newFuncType->getPointerTo() ;
+									loadtype = newType;
+								}
 								op->mutateType(loadtype);
 							}
 							Type *loadptrtype = loadtype->getPointerTo();
@@ -976,6 +1087,12 @@ namespace {
 						{
 							//errs()<<*op<<"\n";
 							//errs()<<"\n";
+
+							if(op->getCalledFunction() ==  NULL){
+								FunctionType *ftp =dyn_cast<FunctionType>(dyn_cast<PointerType>(op->getCalledValue()->getType())->getElementType()); 
+								op->mutateFunctionType(ftp);
+								//continue;
+							}
 							for(unsigned int i=0;i<op->getNumOperands()-1;i++)
 							{
 								if(op->getOperand(i) != NULL)
@@ -989,7 +1106,6 @@ namespace {
 										}
 										//check if it is not a declaration and i8* of getelement ptr or not
 										if(!op->getCalledFunction()->isDeclaration() ){
-											//errs() << "get element ptr operator : \n" << *op << "\n" << *op->getOperand(i) << "\n------------------------------------------------------\n";
 
 											PtrToIntInst *trunc = new PtrToIntInst(op->getOperand(i), Type::getInt32Ty(Ctx),"pti1_",op);
 											std::vector<Value *> args;
@@ -1032,6 +1148,10 @@ namespace {
 							//errs()<<*op<<"\n";
 							for(unsigned int i=0;i<op->getNumOperands()-1;i++)
 							{
+								//this means call parameters match function signature. else break it into required format.
+								if(op->getOperand(i)->getType() == op->getFunctionType()->getParamType(i))
+									continue;
+
 								//if you are using a global pointer in printf scanf or other system calls then collapse that pointer to i8* or to the required pointer type before calling.
 								if(op->getCalledFunction()!=NULL ) { //&& (!op->getCalledFunction()->isIntrinsic()) //&& op->getCalledFunction()->isDeclaration() -- not required as it will readh here only if its a declaration
 										if(op->getOperand(i)->getType() == Type::getInt128Ty(Ctx)){
@@ -1088,6 +1208,7 @@ namespace {
 								{
 									continue;
 								}
+
 
 								TruncInst *tr_lo = new TruncInst(op->getOperand(i), Type::getInt64Ty(Ctx),"fpr_low", op);	// alloca stack cookie;
 								Value* shamt = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),64);
@@ -1147,6 +1268,16 @@ namespace {
 								//errs()<<"TYPES: "<<*o1<<" "<<*o2<<"\n";
 								if(dyn_cast<ConstantPointerNull>(o2))
 								{
+
+									//change this value to zero only if operand 0 is not a function pointer
+									//else create a null valued function pointer
+									if(dyn_cast<PointerType>(o1->getType())){
+										if(dyn_cast<PointerType>(o1->getType())->getElementType()->isFunctionTy()){
+											Constant *null_val = ConstantPointerNull::getNullValue(op->getOperand(0)->getType());
+											op->setOperand(1,null_val);
+											continue;
+										}
+									}
 									op->setOperand(1,llvm::ConstantInt::get(Type::getInt128Ty(Ctx),0));
 								}
 								//if operand(1) is of type i8* and operand(0) of type i128
