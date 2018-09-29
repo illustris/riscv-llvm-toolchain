@@ -1424,19 +1424,18 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 	if(StructType *t = dyn_cast<StructType>(type))
 	{	//check for struct type
 		const StructLayout *SL = D->getStructLayout(t);
-		if(!isNeg)
-			offset+= SL->getElementOffset(c);
-		else
-			offset+= c*SL->getSizeInBytes() ; 
-
 		if(!isconstant)
 		{
 			temp= llvm::ConstantInt::get(Type::getInt64Ty(Context), SL->getSizeInBytes());
 			IRBuilder<> builder(GI);
 			Offset = builder.CreateBinOp(Instruction::Mul,Offset, temp, "tmp");
 		}
-		else
-			offset+=c*D->getTypeAllocSize(type);
+		else{
+			if(!isNeg)
+				offset+= SL->getElementOffset(c);
+			else
+				offset+= c*SL->getSizeInBytes() ; 
+		}
 	}
 	else if(ArrayType *t = dyn_cast<ArrayType>(type))
 	{
