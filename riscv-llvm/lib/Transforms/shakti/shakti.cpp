@@ -903,6 +903,7 @@ namespace {
 
 						else if (auto *op = dyn_cast<LoadInst>(I))
 						{
+							//errs()<< *op << "\n";
 							if(op->getOperand(0)->getType() == Type::getIntNPtrTy(Ctx,128))
 							{
 								op->mutateType(Type::getInt128Ty(Ctx));
@@ -929,24 +930,6 @@ namespace {
 								}
 								continue;
 							}
-							modified = true;
-							TruncInst *tr_lo = new TruncInst(op->getOperand(0), Type::getInt64Ty(Ctx),"fpr_low", op);	// alloca stack cookie
-							Value* shamt = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),64);
-							BinaryOperator *shifted =  BinaryOperator::Create(Instruction::LShr, op->getOperand(0), shamt , "fpr_hi_big", op);
-							TruncInst *tr_hi = new TruncInst(shifted, Type::getInt64Ty(Ctx),"fpr_hi", op);	// alloca stack cookie
-
-							// Set up intrinsic arguments
-							std::vector<Value *> args;
-
-							args.push_back(tr_hi);
-							args.push_back(tr_lo);
-							ArrayRef<Value *> args_ref(args);
-
-							// Create call to intrinsic
-							IRBuilder<> Builder(I);
-							Builder.SetInsertPoint(I);
-							Builder.CreateCall(val, args_ref,"");
-
 							Type *loadtype = op->getType();
 							bool isFnArr = 0;
 							if(dyn_cast<PointerType>(loadtype))
@@ -954,6 +937,20 @@ namespace {
 								isFnArr = dyn_cast<PointerType>(loadtype)->getElementType()->isFunctionTy();
 								//errs()<<"LOADTYPE: "<<*loadtype<<"IsFn: "<<isFnArr<<"\n";
 							}
+
+							/*if(loadtype->isPointerTy() && !isFnArr && op->getOperand(0)->getName().contains("arrayidx")){
+
+								if(dyn_cast<Instruction>(op->getNextNode())->getOpcode() == Instruction::BitCast){
+
+									op->replaceAllUsesWith(op->getOperand(0));
+									--i;
+									op->dropAllReferences();
+									op->removeFromParent();
+									continue;
+								}
+							}*/
+
+
 
 							if (loadtype->isPointerTy())
 							{
@@ -989,15 +986,47 @@ namespace {
 									Type *newType = newFuncType->getPointerTo() ;
 									loadtype = newType;
 								}
-								op->mutateType(loadtype);
+								//op->mutateType(loadtype);
 							}
+
+							/*if(loadtype == Type::getInt128Ty(Ctx) && op->getOperand(0)->getName().contains("arrayidx")){
+								if( (dyn_cast<Instruction>(op->getNextNode())->getOpcode() == Instruction::BitCast 
+ 									|| dyn_cast<Instruction>(op->getNextNode())->getOpcode() == Instruction::Load)
+					  				&&!(dyn_cast<Instruction>(op->getNextNode()->getNextNode())->getOpcode() == Instruction::Call)){
+
+									op->replaceAllUsesWith(op->getOperand(0));
+									--i;
+									op->dropAllReferences();
+									op->removeFromParent();
+									continue;
+								}
+							}*/
+
 							Type *loadptrtype = loadtype->getPointerTo();
+							modified = true;
+							TruncInst *tr_lo = new TruncInst(op->getOperand(0), Type::getInt64Ty(Ctx),"fpr_low", op);	// alloca stack cookie
+							Value* shamt = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),64);
+							BinaryOperator *shifted =  BinaryOperator::Create(Instruction::LShr, op->getOperand(0), shamt , "fpr_hi_big", op);
+							TruncInst *tr_hi = new TruncInst(shifted, Type::getInt64Ty(Ctx),"fpr_hi", op);	// alloca stack cookie
+
+							// Set up intrinsic arguments
+							std::vector<Value *> args;
+
+							args.push_back(tr_hi);
+							args.push_back(tr_lo);
+							ArrayRef<Value *> args_ref(args);
+
+							// Create call to intrinsic
+							IRBuilder<> Builder(I);
+							Builder.SetInsertPoint(I);
+							Builder.CreateCall(val, args_ref,"");
 
 							Value* mask = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0x7fffffff);
 							BinaryOperator *ptr32 =  BinaryOperator::Create(Instruction::And, tr_lo, mask , "ptr32_", op);
 							IntToPtrInst *ptr = new IntToPtrInst(ptr32,loadptrtype,"ptrl",op);
 
 							op->setOperand(0,ptr);
+							op->mutateType(loadtype);
 
 							//Tag the loaded value as fpld if a fatpointer was loaded
 							if(op->getType() == Type::getInt128Ty(Ctx))
@@ -1072,6 +1101,7 @@ namespace {
 						{
 							//errs()<<"BITCAST: "<<*op<<"\n";
 							//errs()<<"\n-----------\n"<<*(op->getSrcTy())<<", "<<*(op->getDestTy())<<"\n-----------\n";
+
 							//if(op->getSrcTy() == Type::getInt128Ty(Ctx) && op->getDestTy()->isPointerTy())
 							//{
 								//errs()<<"\n-----------\n"<<*(op->getSrcTy())<<", "<<*(op->getDestTy())<<"\n-----------\n";
@@ -1398,6 +1428,15 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 			offset+= SL->getElementOffset(c);
 		else
 			offset+= c*SL->getSizeInBytes() ; 
+
+		if(!isconstant)
+		{
+			temp= llvm::ConstantInt::get(Type::getInt64Ty(Context), SL->getSizeInBytes());
+			IRBuilder<> builder(GI);
+			Offset = builder.CreateBinOp(Instruction::Mul,Offset, temp, "tmp");
+		}
+		else
+			offset+=c*D->getTypeAllocSize(type);
 	}
 	else if(ArrayType *t = dyn_cast<ArrayType>(type))
 	{
@@ -1417,15 +1456,14 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 
 		Type *baseTy = rec_old->getElementType();
 
-		Type *gelType = Type::getInt128Ty(Context);
+		/*Type *gelType = Type::getInt128Ty(Context);
 		while(depth)
 		{
 			int sz = sizes.top();
 			sizes.pop();
 			gelType = ArrayType::get(gelType,sz);
 			depth--;
-		}
-
+		}*/
 		//errs()<<depth<<": "<<*gelType<<"\n";
 		bool isFnArr = 0;
 		if(dyn_cast<PointerType>(baseTy))
@@ -1436,7 +1474,8 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 		if(!isconstant)
 		{
 			//errs()<<"\n------\n"<<*GI<<"\n";
-			temp= llvm::ConstantInt::get(Type::getInt64Ty(Context), D->getTypeAllocSize((baseTy->isPointerTy() && !isFnArr)?Type::getInt128Ty(Context):baseTy));
+			//temp= llvm::ConstantInt::get(Type::getInt64Ty(Context), D->getTypeAllocSize((baseTy->isPointerTy() && !isFnArr)?Type::getInt128Ty(Context):baseTy));
+			temp= llvm::ConstantInt::get(Type::getInt64Ty(Context), D->getTypeAllocSize(t->getElementType()));
 			//errs()<<*t->getElementType()<<"\n"<<D->getTypeAllocSize(t->getElementType())<<"\n";
 			IRBuilder<> builder(GI);
 			Offset = builder.CreateBinOp(Instruction::Mul,Offset, temp, "tmp");
