@@ -13,7 +13,7 @@
 #include <map>
 #include <set>
 //#define debug_spass
-#define debug_spass_dmodule
+//#define debug_spass_dmodule
 
 using namespace llvm;
 
@@ -262,7 +262,8 @@ namespace {
 													const StructLayout *SL = D->getStructLayout(to);
 													unsigned long long sz = SL->getSizeInBytes();
 													//errs()<<*op->getOperand(0)<<"\n"<<*nextbc<<"\n"<<sz<<"\n";
-													op->setOperand(0,llvm::ConstantInt::get(Type::getInt64Ty(Ctx),sz));
+													if(dyn_cast<ConstantInt>(op->getOperand(0)))
+														op->setOperand(0,llvm::ConstantInt::get(Type::getInt64Ty(Ctx),sz));
 												}
 											}
 										}
@@ -561,9 +562,10 @@ namespace {
 					errs() << "Something is wrong with this function \n"  ;
 					continue;
 				}
-				Instruction *insertPoint = getData[0];
+				Instruction *insertPoint = getData[2]->getNextNode();//getData[0];
 				ptr_to_st_cook = dyn_cast<PtrToIntInst>(getData[1]);
 				ptr_to_st_hash = dyn_cast<TruncInst>(getData[2]);
+
 
 				for(Function::arg_iterator j = F.arg_begin(), end = F.arg_end(); j != end; ++j)
 				{
@@ -1404,6 +1406,7 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 	int c = 0;
 	bool isconstant = true;
 	bool isNeg = false;
+	int noOfOperands = GI->getNumOperands();
 	if(ConstantInt *CI = dyn_cast<ConstantInt>(GI->getOperand(GI->getNumOperands()-1))){// get the last operand of the getelementptr
 		c = CI->getZExtValue ();
 		if(c < 0){
@@ -1419,11 +1422,11 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 		// Offset = I->getOperand(0);
 		Offset = GI->getOperand(GI->getNumOperands()-1);
 	}
-
 	Type *type = GI->getSourceElementType(); //get the type of getelementptr
 	if(StructType *t = dyn_cast<StructType>(type))
 	{	//check for struct type
 		const StructLayout *SL = D->getStructLayout(t);
+
 		if(!isconstant)
 		{
 			temp= llvm::ConstantInt::get(Type::getInt64Ty(Context), SL->getSizeInBytes());
@@ -1431,10 +1434,14 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 			Offset = builder.CreateBinOp(Instruction::Mul,Offset, temp, "tmp");
 		}
 		else{
-			if(!isNeg)
-				offset+= SL->getElementOffset(c);
-			else
-				offset+= c*SL->getSizeInBytes() ; 
+			if(!isNeg){
+				//now the offset can be elements within structs or struct++. If struct++ then no of operand = 2 else 3
+				if(noOfOperands == 2 )
+					offset+=c*SL->getSizeInBytes();
+				else
+					offset+= SL->getElementOffset(c);
+			}else
+				offset+= c*SL->getSizeInBytes() ;
 		}
 	}
 	else if(ArrayType *t = dyn_cast<ArrayType>(type))
