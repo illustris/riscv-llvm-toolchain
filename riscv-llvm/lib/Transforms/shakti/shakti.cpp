@@ -648,7 +648,6 @@ namespace {
 										flag = true;
 										continue;
 									}
-
 									User *user = U.getUser();
 									users.push(user);
 									pos.push(U.getOperandNo());
@@ -941,9 +940,7 @@ namespace {
 							}
 
 							/*if(loadtype->isPointerTy() && !isFnArr && op->getOperand(0)->getName().contains("arrayidx")){
-
 								if(dyn_cast<Instruction>(op->getNextNode())->getOpcode() == Instruction::BitCast){
-
 									op->replaceAllUsesWith(op->getOperand(0));
 									--i;
 									op->dropAllReferences();
@@ -995,7 +992,6 @@ namespace {
 								if( (dyn_cast<Instruction>(op->getNextNode())->getOpcode() == Instruction::BitCast 
  									|| dyn_cast<Instruction>(op->getNextNode())->getOpcode() == Instruction::Load)
 					  				&&!(dyn_cast<Instruction>(op->getNextNode()->getNextNode())->getOpcode() == Instruction::Call)){
-
 									op->replaceAllUsesWith(op->getOperand(0));
 									--i;
 									op->dropAllReferences();
@@ -1085,7 +1081,6 @@ namespace {
 								users.push(user);
 								pos.push(U.getOperandNo());
 							}
-
 							while(users.size())
 							{
 								User *u = users.top();
@@ -1346,6 +1341,38 @@ namespace {
 								op->dropAllReferences();
 								op->removeFromParent();
 							}
+						}
+						else if(auto *op = dyn_cast<PHINode>(I)){
+							Value *op1 = op->getOperand(0);
+							Value *op2 = op->getOperand(1);
+
+							if(op1->getType()!=op2->getType()){
+								if(op2->getType() == Type::getInt128Ty(Ctx)){
+									//change type 0 to i128 and phi node type to i128 also.
+
+									BasicBlock *phiBlock = op->getIncomingBlock(0);
+									TerminatorInst *terInst = phiBlock->getTerminator();
+
+									PtrToIntInst *trunc = new PtrToIntInst(op->getOperand(0), Type::getInt32Ty(Ctx),"pti1_",terInst);
+
+									std::vector<Value *> args;
+									args.push_back(trunc);//ptr
+									PtrToIntInst *ptr32 = new PtrToIntInst(rodata_cookie, Type::getInt32Ty(Ctx),"ptr32_1_",terInst);
+									args.push_back(ptr32);//base
+
+									args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),0));//TODO bound
+									args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),ro_hash));//hash
+									ArrayRef<Value *> args_ref(args);
+
+									IRBuilder<> Builder(terInst);
+									Builder.SetInsertPoint(terInst);
+									Value *fpr = Builder.CreateCall(craftFunc, args_ref,op->getName()+"fprz");
+									op->setOperand(0,fpr);
+									op->mutateType(Type::getInt128Ty(Ctx));
+								}
+
+							}
+
 						}
 						//TODO: this is a temporary fix for functions that return pointers to global variables
 						else if (auto *op = dyn_cast<ReturnInst>(I))
