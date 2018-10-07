@@ -165,6 +165,48 @@ namespace {
 						continue;
 						//errs()<<"HERE"<<*glob<<"\n";
 					//glob->mutateType(Type::getInt128Ty(GCtx));
+
+					errs() << *glob << " : "  << dyn_cast<PointerType>(glob->getValueType())->getElementType()->isFunctionTy() << "\n " ;
+					if(dyn_cast<PointerType>(glob->getValueType())->getElementType()->isFunctionTy()){
+						FunctionType *func_type = dyn_cast<FunctionType>(dyn_cast<PointerType>(glob->getValueType())->getElementType());
+						std::vector<Type*> fParamTypes;
+
+						Type *func_ret_type = func_type->getReturnType();
+						Type *fRetType = (func_type->getReturnType()->isPointerTy() && !(dyn_cast<PointerType>(func_ret_type)->getElementType()->isFunctionTy()) ? Type::getInt128Ty(GCtx) : func_ret_type);
+						for(FunctionType::param_iterator k = func_type->param_begin(), endp = func_type->param_end(); k != endp; ++k){
+							bool argIsFnArr = 0;
+							if(dyn_cast<PointerType>(*k)){
+								argIsFnArr = dyn_cast<PointerType>(*k)->getElementType()->isFunctionTy();
+							}
+							if((*k)->isPointerTy() && !argIsFnArr){
+								fParamTypes.push_back(Type::getInt128Ty(GCtx));
+							}
+							else
+								fParamTypes.push_back(*k);
+						}
+						FunctionType *newFuncType = FunctionType::get(fRetType,fParamTypes,func_type->isVarArg());
+					//	errs() << "new function type : " << *newFuncType->getPointerTo() << "\n" ;
+						Type *newType = newFuncType->getPointerTo() ;
+						//elems_vec.push_back(newType);
+						Constant *null_val = ConstantPointerNull::getNullValue(newType);
+						GlobalVariable *glob2 = new GlobalVariable
+						(
+							M,
+							newType,
+							glob->isConstant(),
+							glob->getLinkage(),
+							null_val,
+							"fpr_"+glob->getName(),
+							glob
+						);
+						glob->replaceAllUsesWith(glob2);
+						j--;
+						glob->dropAllReferences();
+						glob->eraseFromParent();
+						continue;
+					}
+
+					//reach here  only if its a pointer and not a global function pointer
 					GlobalVariable *glob2 = new GlobalVariable
 					(
 						M,
@@ -477,6 +519,7 @@ namespace {
 				M.getFunctionList().push_back(funcy);
 				while (!funcx->use_empty())
 				{
+
 					if(dyn_cast<CallInst>(funcx->user_back()))
 					{
 						//errs()<<"USER:\n"<<*(funcx->user_back())<<"\n";
@@ -515,7 +558,7 @@ namespace {
 					}
 					else
 					{
-						//errs()<<"UNKNOWN USER:\n"<<*(funcx->user_back())<<"\n";
+						funcx->replaceAllUsesWith(funcy);
 						continue;
 					}
 				}//
@@ -1120,6 +1163,7 @@ namespace {
 								op->mutateFunctionType(ftp);
 								//continue;
 							}
+
 							for(unsigned int i=0;i<op->getNumOperands()-1;i++)
 							{
 								if(op->getOperand(i) != NULL)
