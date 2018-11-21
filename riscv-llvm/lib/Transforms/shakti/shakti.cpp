@@ -18,7 +18,7 @@
 using namespace llvm;
 
 Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Context);
-
+Value* resolveGEPOperator(GEPOperator *GI,DataLayout *D,LLVMContext &Context);
 namespace {
 	struct shaktiPass : public ModulePass
 	{
@@ -77,7 +77,11 @@ namespace {
 
 			unsigned long long ro_cook = 0xdeadbeef1337c0d3;
 			unsigned long ro_hash = 0xcd9a7e3c;
-			GlobalVariable *rodata_cookie = new GlobalVariable(M, Type::getInt64Ty(M.getContext()), true, GlobalValue::LinkageTypes::PrivateLinkage, ConstantInt::get(Type::getInt64Ty(M.getContext()),ro_cook), "ro_cookie");
+
+			//to add the rodata_cookie at the beginning of all the global variables.
+			GlobalVariable *first_global_var = dyn_cast<GlobalVariable>(M.global_begin());
+
+			GlobalVariable *rodata_cookie = new GlobalVariable(M, Type::getInt64Ty(M.getContext()), true, GlobalValue::LinkageTypes::PrivateLinkage, ConstantInt::get(Type::getInt64Ty(M.getContext()),ro_cook), "ro_cookie",first_global_var);
 
 			// First pass creates duplicate definitions of structs with pointers
 			std::vector< StructType * > structs = M.getIdentifiedStructTypes();
@@ -166,7 +170,7 @@ namespace {
 						//errs()<<"HERE"<<*glob<<"\n";
 					//glob->mutateType(Type::getInt128Ty(GCtx));
 
-					errs() << *glob << " : "  << dyn_cast<PointerType>(glob->getValueType())->getElementType()->isFunctionTy() << "\n " ;
+					//errs() << *glob << " : "  << dyn_cast<PointerType>(glob->getValueType())->getElementType()->isFunctionTy() << "\n " ;
 					if(dyn_cast<PointerType>(glob->getValueType())->getElementType()->isFunctionTy()){
 						FunctionType *func_type = dyn_cast<FunctionType>(dyn_cast<PointerType>(glob->getValueType())->getElementType());
 						std::vector<Type*> fParamTypes;
@@ -437,6 +441,7 @@ namespace {
 
 			// Fourth pass Fixes argument types in function calls within the module
 			Module::FunctionListType &functions = M.getFunctionList();
+			std::map<std::string, std::vector<Type*>> function_parameters;
 			std::stack< Function * > to_replace_functions;
 			std::stack< Function * > replace_with_functions;
 			std::stack< int > argCount;
@@ -455,6 +460,8 @@ namespace {
 				//errs()<<"\n*****\nFound definition:\n"<<func<<"\n*****\n";
 
 				std::vector<Type*> fParamTypes;
+				std::vector<Type*> fOriginalParamTypes;
+
 				bool fnHasPtr = false;
 				fnHasPtr = (func.getReturnType()->isPointerTy() ? true : false);
 
@@ -471,6 +478,7 @@ namespace {
 				{
 					arg_index++;
 					bool argIsFnArr = 0;
+					fOriginalParamTypes.push_back(*k);
 					if(dyn_cast<PointerType>(*k))
 					{
 						argIsFnArr = dyn_cast<PointerType>(*k)->getElementType()->isFunctionTy();
@@ -495,6 +503,7 @@ namespace {
 						fParamTypes.push_back(*k);
 					//errs()<<"\npushed "<<*(fParamTypes.back());
 				}
+				function_parameters[func.getName()] = fOriginalParamTypes;
 				if(!fnHasPtr)
 					continue;
 				FunctionType *fType = FunctionType::get(fRetType, fParamTypes, func.getFunctionType()->isVarArg());
@@ -590,8 +599,13 @@ namespace {
 			for (auto &F : M)
 			{
 				DataLayout *D = new DataLayout(&M);
-
 				LLVMContext &Ctx = F.getContext();
+
+				/*std::vector<Type*> printPtrParamTypes = {Type::getInt128Ty(Ctx)};
+				Type *printPtrRetType = Type::getVoidTy(Ctx);//Type::getInt128Ty(Ctx);
+				FunctionType *printPtrFuncType = FunctionType::get(printPtrRetType, printPtrParamTypes, false);
+				Value *printPtrFunc = F.getParent()->getOrInsertFunction("printptr", printPtrFuncType);*/
+
 				std::vector<Type*> craftParamTypes = {Type::getInt32Ty(Ctx),Type::getInt32Ty(Ctx),Type::getInt32Ty(Ctx),Type::getInt32Ty(Ctx)};
 				Type *craftRetType = Type::getInt128Ty(Ctx);
 				FunctionType *craftFuncType = FunctionType::get(craftRetType, craftParamTypes, false);
@@ -609,13 +623,46 @@ namespace {
 				ptr_to_st_cook = dyn_cast<PtrToIntInst>(getData[1]);
 				ptr_to_st_hash = dyn_cast<TruncInst>(getData[2]);
 
-
+				int nop = -1;bool f = true;Value *argc ;//BinaryOperator *res;
 				for(Function::arg_iterator j = F.arg_begin(), end = F.arg_end(); j != end; ++j)
 				{
+					nop++;
 					if(j->getType()->isPointerTy() && F.getName() != "llvm.RISCV.hash")
 					{
+						if(dyn_cast<PointerType>(j->getType())->getElementType()->isFunctionTy())
+							continue;
 						j->mutateType(Type::getInt128Ty(Ctx));
 						//errs()<<*j<<"\n";
+					}
+					if(F.getName() == "main" && f){
+						errs() << *j << "\n" ;
+						argc = j;
+						f = false;
+					}
+					if(j->getType() == Type::getInt128Ty(Ctx) && F.getName() == "main"){
+						//craft a fatpointer for that variable.
+						std::vector<Value *> args;
+						std::vector<Type *> originalParamTypes = function_parameters.find(F.getName())->second;
+						//errs() << *argc << " " << *originalParamTypes.at(nop) << "\n" ;
+						TruncInst *trunc = new TruncInst(j, Type::getInt32Ty(Ctx),"trunc_ptr_", insertPoint);
+						args.push_back(trunc);
+						args.push_back(ptr_to_st_cook);
+						BinaryOperator *bound;
+						if(F.getName() == "main"){
+							Value *constant =  llvm::ConstantInt::get(Type::getInt32Ty(Ctx),(D->getTypeAllocSize(originalParamTypes.at(nop))));
+							Value * size = BinaryOperator::Create( Instruction::Mul,argc,constant, "size", insertPoint);
+							bound = BinaryOperator::Create( Instruction::Add,trunc , size , "absolute_bnd", insertPoint);
+						}
+						args.push_back(bound);
+						args.push_back(ptr_to_st_hash);
+						ArrayRef<Value *> args_ref(args);
+						IRBuilder<> Builder(insertPoint);
+						Builder.SetInsertPoint(insertPoint);
+						Value *fpr = Builder.CreateCall(craftFunc, args_ref,j->getName()+"fpr");
+						// Replace all uses of pointer with fatpointer
+						j->replaceAllUsesWith(fpr);
+						// except in the ptrtoint instruction that uses the pointer to make a fatpointer
+						trunc->setOperand(0,j);
 					}
 				}//*/
 
@@ -628,10 +675,8 @@ namespace {
 					{
 						Instruction *I = dyn_cast<Instruction>(i);
 						//errs()<<*I<<"\n";
-
 						if (auto *op = dyn_cast<AllocaInst>(I))
 						{
-
 							if(rep_structs.find(dyn_cast<StructType>(op->getAllocatedType())) != rep_structs.end())
 							{
 								op->mutateType(rep_structs.at(dyn_cast<StructType>(op->getAllocatedType()))->getPointerTo());
@@ -757,19 +802,25 @@ namespace {
 							std::vector<Value *> args;
 							args.push_back(trunc);
 							args.push_back(ptr_to_st_cook);
-							if(dyn_cast<ConstantInt>(op->getArraySize()))
-								args.push_back(
+							BinaryOperator *bound;
+							if(dyn_cast<ConstantInt>(op->getArraySize())){
+								/*args.push_back(
 									llvm::ConstantInt::get(
 										Type::getInt32Ty(Ctx),
 										(D->getTypeAllocSize(op->getAllocatedType()))
 									)
-								);
+								);*/
+								Value *size =  llvm::ConstantInt::get(Type::getInt32Ty(Ctx),(D->getTypeAllocSize(op->getAllocatedType())));
+								bound = BinaryOperator::Create( Instruction::Add, trunc , size , "absolute_bnd", insertPoint); 
+							}
 							else
 							{
 								BinaryOperator *total_off =  BinaryOperator::Create(Instruction::Mul, op->getArraySize(), llvm::ConstantInt::get(Type::getInt64Ty(Ctx),(D->getTypeAllocSize(op->getAllocatedType()))) , "off", insertPoint);
 								TruncInst *total_off_trunc = new TruncInst(total_off, Type::getInt32Ty(Ctx),"offt", insertPoint);
-								args.push_back(total_off_trunc);
+								bound = BinaryOperator::Create( Instruction::Add, trunc , total_off_trunc , "absolute_bnd", insertPoint); 
+								//args.push_back(total_off_trunc);
 							}
+							args.push_back(bound);
 							args.push_back(ptr_to_st_hash);
 							ArrayRef<Value *> args_ref(args);
 
@@ -820,7 +871,23 @@ namespace {
 										args.push_back(trunc);//ptr
 										PtrToIntInst *ptr32 = new PtrToIntInst(rodata_cookie, Type::getInt32Ty(Ctx),"ptr32_1_",op);
 										args.push_back(ptr32);//base
-										args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),0));//TODO bound
+
+										//args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),0));//TODO bound
+
+										Value *size;
+										if(dyn_cast<GEPOperator>(op->getOperand(0))){
+
+											GEPOperator *gep = dyn_cast<GEPOperator>(op->getOperand(0));
+											size = resolveGEPOperator(gep,D,Ctx);
+
+										}else{
+
+											size =  llvm::ConstantInt::get(Type::getInt32Ty(Ctx),(D->getTypeAllocSize(op->getOperand(0)->getType()))); // need to check
+										}
+
+										BinaryOperator *bound = BinaryOperator::Create( Instruction::Add, trunc , size , "absolute_bnd", op); 
+										args.push_back(bound);
+
 										args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),ro_hash));//hash
 										ArrayRef<Value *> args_ref(args);
 
@@ -861,9 +928,11 @@ namespace {
 								Builder.SetInsertPoint(I);
 								Builder.CreateCall(val, args_ref1,"");
 
-								Value* mask1 = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0x7fffffff);
+								Value* mask1 = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0xffffffff);
 								BinaryOperator *ptr32_1 =  BinaryOperator::Create(Instruction::And, tr_lo1, mask1 , "ptr32x", op);
 								IntToPtrInst *ptr1 = new IntToPtrInst(ptr32_1,op1Ty,"ptrx",op);
+								//if validate is true then store it in operand directly
+								//IntToPtrInst *ptr1 = new IntToPtrInst(op->getOperand(0),op1Ty,"ptrx",op);
 
 								//new StoreInst(ptr1,op->getOperand(1),op);
 								op->setOperand(0,ptr1);
@@ -883,12 +952,28 @@ namespace {
 									{
 										//craft fpr, store fpr
 										PtrToIntInst *trunc = new PtrToIntInst(op->getOperand(0), Type::getInt32Ty(Ctx),"pti1_",op);
-
+										//errs() << *op->getOperand(0) << "\n" ;
 										std::vector<Value *> args;
 										args.push_back(trunc);//ptr
 										PtrToIntInst *ptr32 = new PtrToIntInst(rodata_cookie, Type::getInt32Ty(Ctx),"ptr32_1_",op);
 										args.push_back(ptr32);//base
-										args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),0));//TODO bound
+
+										//args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),size));//TODO bound
+
+										Value *size;
+										if(dyn_cast<GEPOperator>(op->getOperand(0))){
+
+											GEPOperator *gep = dyn_cast<GEPOperator>(op->getOperand(0));
+											size = resolveGEPOperator(gep,D,Ctx);
+
+										}else{
+
+											size =  llvm::ConstantInt::get(Type::getInt32Ty(Ctx),(D->getTypeAllocSize(op->getOperand(0)->getType()))); // need to check
+										}
+
+										BinaryOperator *bound = BinaryOperator::Create( Instruction::Add, trunc , size , "absolute_bnd", op); 
+										args.push_back(bound);
+
 										args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),ro_hash));//hash
 										ArrayRef<Value *> args_ref(args);
 
@@ -932,17 +1017,14 @@ namespace {
 							}
 							Type *storeptrtype = storetype->getPointerTo();
 
-							Value* mask = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0x7fffffff);
+							Value* mask = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0xffffffff);
 							BinaryOperator *ptr32 =  BinaryOperator::Create(Instruction::And, tr_lo, mask , "ptr32_", op);
 							IntToPtrInst *ptr = new IntToPtrInst(ptr32,storeptrtype,"ptrs",op);
+							//if validate is true then directly store it in the operand
+							//IntToPtrInst *ptr = new IntToPtrInst(op->getOperand(1),storeptrtype,"ptrs",op);
 
 							//new StoreInst(op->getOperand(0),ptr,op);
 							op->setOperand(1, ptr);
-
-							//--i;
-							//op->dropAllReferences();
-							//op->removeFromParent();
-
 						}
 
 						else if (auto *op = dyn_cast<LoadInst>(I))
@@ -982,17 +1064,6 @@ namespace {
 								//errs()<<"LOADTYPE: "<<*loadtype<<"IsFn: "<<isFnArr<<"\n";
 							}
 
-							/*if(loadtype->isPointerTy() && !isFnArr && op->getOperand(0)->getName().contains("arrayidx")){
-								if(dyn_cast<Instruction>(op->getNextNode())->getOpcode() == Instruction::BitCast){
-									op->replaceAllUsesWith(op->getOperand(0));
-									--i;
-									op->dropAllReferences();
-									op->removeFromParent();
-									continue;
-								}
-							}*/
-
-
 
 							if (loadtype->isPointerTy())
 							{
@@ -1031,24 +1102,17 @@ namespace {
 								//op->mutateType(loadtype);
 							}
 
-							/*if(loadtype == Type::getInt128Ty(Ctx) && op->getOperand(0)->getName().contains("arrayidx")){
-								if( (dyn_cast<Instruction>(op->getNextNode())->getOpcode() == Instruction::BitCast 
- 									|| dyn_cast<Instruction>(op->getNextNode())->getOpcode() == Instruction::Load)
-					  				&&!(dyn_cast<Instruction>(op->getNextNode()->getNextNode())->getOpcode() == Instruction::Call)){
-									op->replaceAllUsesWith(op->getOperand(0));
-									--i;
-									op->dropAllReferences();
-									op->removeFromParent();
-									continue;
-								}
-							}*/
-
 							Type *loadptrtype = loadtype->getPointerTo();
 							modified = true;
+							//Value *copy = op->getOperand(0);
 							TruncInst *tr_lo = new TruncInst(op->getOperand(0), Type::getInt64Ty(Ctx),"fpr_low", op);	// alloca stack cookie
 							Value* shamt = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),64);
 							BinaryOperator *shifted =  BinaryOperator::Create(Instruction::LShr, op->getOperand(0), shamt , "fpr_hi_big", op);
 							TruncInst *tr_hi = new TruncInst(shifted, Type::getInt64Ty(Ctx),"fpr_hi", op);	// alloca stack cookie
+
+							// Create call to intrinsic
+							IRBuilder<> Builder(I);
+							Builder.SetInsertPoint(I);
 
 							// Set up intrinsic arguments
 							std::vector<Value *> args;
@@ -1056,13 +1120,9 @@ namespace {
 							args.push_back(tr_hi);
 							args.push_back(tr_lo);
 							ArrayRef<Value *> args_ref(args);
-
-							// Create call to intrinsic
-							IRBuilder<> Builder(I);
-							Builder.SetInsertPoint(I);
 							Builder.CreateCall(val, args_ref,"");
 
-							Value* mask = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0x7fffffff);
+							Value* mask = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0xffffffff);//7fffffff
 							BinaryOperator *ptr32 =  BinaryOperator::Create(Instruction::And, tr_lo, mask , "ptr32_", op);
 							IntToPtrInst *ptr = new IntToPtrInst(ptr32,loadptrtype,"ptrl",op);
 
@@ -1070,13 +1130,11 @@ namespace {
 							op->mutateType(loadtype);
 
 							//Tag the loaded value as fpld if a fatpointer was loaded
-							if(op->getType() == Type::getInt128Ty(Ctx))
+							if(loadtype == Type::getInt128Ty(Ctx))//op->getType()
 							{
 								//errs()<<"FPR:\n"<<*op<<"\n";
 								op->setName("fpld");
 							}
-							//errs()<<"\n=========\n"<<*ptr<<"\n-------\n"<<*op<<"\n-------\n"<<*loadtype<<"\n=========\n";
-
 						}
 
 						else if (auto *op = dyn_cast<GetElementPtrInst>(I))
@@ -1118,33 +1176,12 @@ namespace {
 
 							op->replaceAllUsesWith(binop);
 
-							/*for (auto &U : op->uses())
-							{
-								User *user = U.getUser();
-								users.push(user);
-								pos.push(U.getOperandNo());
-							}
-							while(users.size())
-							{
-								User *u = users.top();
-								users.pop();
-								int index = pos.top();
-								pos.pop();
-								u->setOperand(index, binop);	
-							}*/
-
 							--i;
 							op->dropAllReferences();
 							op->removeFromParent();
 						}
 						else if (auto *op = dyn_cast<BitCastInst>(I))
 						{
-							//errs()<<"BITCAST: "<<*op<<"\n";
-							//errs()<<"\n-----------\n"<<*(op->getSrcTy())<<", "<<*(op->getDestTy())<<"\n-----------\n";
-
-							//if(op->getSrcTy() == Type::getInt128Ty(Ctx) && op->getDestTy()->isPointerTy())
-							//{
-								//errs()<<"\n-----------\n"<<*(op->getSrcTy())<<", "<<*(op->getDestTy())<<"\n-----------\n";
 							if(op->getOperand(0)->getType() == Type::getInt128Ty(Ctx))
 							{
 								op->replaceAllUsesWith(op->getOperand(0));
@@ -1184,7 +1221,21 @@ namespace {
 											PtrToIntInst *ptr32 = new PtrToIntInst(rodata_cookie, Type::getInt32Ty(Ctx),"ptr32_1_",op);
 											args.push_back(ptr32);//base
 
-											args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),0));//TODO bound
+											//args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),0));//TODO bound
+											//Value *size =  llvm::ConstantInt::get(Type::getInt32Ty(Ctx),(D->getTypeAllocSize(op->getOperand(i)->getType()))); // need to check
+											Value *size;
+											if(dyn_cast<GEPOperator>(op->getOperand(i))){
+
+												GEPOperator *gep = dyn_cast<GEPOperator>(op->getOperand(i));
+												size = resolveGEPOperator(gep,D,Ctx);
+
+											}else{
+
+												size =  llvm::ConstantInt::get(Type::getInt32Ty(Ctx),(D->getTypeAllocSize(op->getOperand(i)->getType()))); // need to check
+											}
+											BinaryOperator *bound = BinaryOperator::Create( Instruction::Add, trunc , size , "absolute_bnd", op); 
+											args.push_back(bound);
+
 											args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),ro_hash));//hash
 											ArrayRef<Value *> args_ref(args);
 
@@ -1230,8 +1281,8 @@ namespace {
 											//truncte to i8* and then pass to the function
 
 											//validate the pointer 
-											TruncInst *tr_lo = new TruncInst(op->getOperand(i), Type::getInt64Ty(Ctx),"fpr_low", op);
-											Value* shamt = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),64);
+											TruncInst *tr_lo = new TruncInst(op->getOperand(i), Type::getInt32Ty(Ctx),"fpr_low", op);
+											/*Value* shamt = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),64);
 											BinaryOperator *shifted =  BinaryOperator::Create(Instruction::LShr, op->getOperand(i), shamt , "fpr_hi_big", op);
 											TruncInst *tr_hi = new TruncInst(shifted, Type::getInt64Ty(Ctx),"fpr_hi", op);
 
@@ -1246,7 +1297,7 @@ namespace {
 											IRBuilder<> Builder(I);
 											Builder.SetInsertPoint(I);
 											Builder.CreateCall(val, args_ref,"");
-
+*/
 											//validating the pointer done
 											//type cast to i8* 
 											Type *ptype = Type::getInt8PtrTy(Ctx);
@@ -1262,11 +1313,12 @@ namespace {
 												}
 											}
 
-											Value* mask = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0x7fffffff);
-											BinaryOperator *ptr32 =  BinaryOperator::Create(Instruction::And, tr_lo, mask , "ptr32_", op);
+											//Value* mask = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0xffffffff);
+											//BinaryOperator *ptr32 =  BinaryOperator::Create(Instruction::And, tr_lo, mask , "ptr32_", op);
 
-											IntToPtrInst *ptr = new IntToPtrInst(ptr32,ptype,"ptrc",op);
+											//IntToPtrInst *ptr = new IntToPtrInst(ptr32,ptype,"ptrc",op);
 
+											IntToPtrInst *ptr = new IntToPtrInst(tr_lo,ptype,"ptrc",op);
 											op->setOperand(i,ptr);
 											op->getOperand(i)->mutateType(ptype);
 											continue;
@@ -1279,7 +1331,6 @@ namespace {
 								{
 									continue;
 								}
-
 
 								TruncInst *tr_lo = new TruncInst(op->getOperand(i), Type::getInt64Ty(Ctx),"fpr_low", op);	// alloca stack cookie;
 								Value* shamt = llvm::ConstantInt::get(Type::getInt128Ty(Ctx),64);
@@ -1314,7 +1365,7 @@ namespace {
 
 								//errs()<<i<<".\t"<<ptype<<"\n";
 
-								Value* mask = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0x7fffffff);
+								Value* mask = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0xffffffff);
 								BinaryOperator *ptr32 =  BinaryOperator::Create(Instruction::And, tr_lo, mask , "ptr32_", op);
 
 								IntToPtrInst *ptr = new IntToPtrInst(ptr32,ptype,"ptrc",op);
@@ -1362,7 +1413,22 @@ namespace {
 									PtrToIntInst *ptr32 = new PtrToIntInst(rodata_cookie, Type::getInt32Ty(Ctx),"ptr32_1_",op);
 									args.push_back(ptr32);//base
 
-									args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),0));//TODO bound
+									//args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),0));//TODO bound
+
+									//Value *size =  llvm::ConstantInt::get(Type::getInt32Ty(Ctx),(D->getTypeAllocSize(op->getOperand(1)->getType()))); // need to check
+									Value *size;
+									if(dyn_cast<GEPOperator>(op->getOperand(1))){
+
+										GEPOperator *gep = dyn_cast<GEPOperator>(op->getOperand(1));
+										size = resolveGEPOperator(gep,D,Ctx);
+
+									}else{
+
+										size =  llvm::ConstantInt::get(Type::getInt32Ty(Ctx),(D->getTypeAllocSize(op->getOperand(1)->getType()))); // need to check
+									}
+									BinaryOperator *bound = BinaryOperator::Create( Instruction::Add, trunc , size , "absolute_bnd", op); 
+									args.push_back(bound);
+
 									args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),ro_hash));//hash
 									ArrayRef<Value *> args_ref(args);
 
@@ -1404,7 +1470,21 @@ namespace {
 									PtrToIntInst *ptr32 = new PtrToIntInst(rodata_cookie, Type::getInt32Ty(Ctx),"ptr32_1_",terInst);
 									args.push_back(ptr32);//base
 
-									args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),0));//TODO bound
+									//args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),0));//TODO bound
+									//Value *size =  llvm::ConstantInt::get(Type::getInt32Ty(Ctx),(D->getTypeAllocSize(op->getOperand(0)->getType()))); // need to check
+									Value *size;
+									if(dyn_cast<GEPOperator>(op->getOperand(0))){
+
+										GEPOperator *gep = dyn_cast<GEPOperator>(op->getOperand(0));
+										size = resolveGEPOperator(gep,D,Ctx);
+
+									}else{
+	
+										size =  llvm::ConstantInt::get(Type::getInt32Ty(Ctx),(D->getTypeAllocSize(op->getOperand(0)->getType()))); // need to check
+									}
+									BinaryOperator *bound = BinaryOperator::Create( Instruction::Add, trunc , size , "absolute_bnd", terInst); 
+									args.push_back(bound);
+
 									args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),ro_hash));//hash
 									ArrayRef<Value *> args_ref(args);
 
@@ -1440,7 +1520,22 @@ namespace {
 							PtrToIntInst *ptr32 = new PtrToIntInst(rodata_cookie, Type::getInt32Ty(Ctx),"glob_cook_pti_",op);
 							args.push_back(ptr32);//base
 
-							args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),0));//TODO bound
+							//args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),0));//TODO bound
+
+							//Value *size =  llvm::ConstantInt::get(Type::getInt32Ty(Ctx),(D->getTypeAllocSize(op->getReturnValue()->getType()))); // need to check
+							Value *size;
+							if(dyn_cast<GEPOperator>(op->getReturnValue())){
+
+								GEPOperator *gep = dyn_cast<GEPOperator>(op->getReturnValue());
+								size = resolveGEPOperator(gep,D,Ctx);
+
+							}else{
+
+								size =  llvm::ConstantInt::get(Type::getInt32Ty(Ctx),(D->getTypeAllocSize(op->getReturnValue()->getType()))); // need to check
+							}
+							BinaryOperator *bound = BinaryOperator::Create( Instruction::Add, trunc , size , "absolute_bnd", op); 
+							args.push_back(bound);
+
 							args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),ro_hash));//hash
 							ArrayRef<Value *> args_ref(args);
 
@@ -1453,6 +1548,7 @@ namespace {
 						//errs()<<*I;
 						//errs()<<"\n--------\n";
 					}
+
 				}
 				//errs()<<"\n*************************************************\n";
 				//errs()<<F;
@@ -1469,6 +1565,47 @@ namespace {
 		}
 	};
 }
+
+Value* resolveGEPOperator(GEPOperator *GI,DataLayout *D,LLVMContext &Context)
+{
+	int offset = 0;
+	Value *Offset;
+	int c = 0;
+	//errs() << *GI << "\n" ;
+	bool isNeg = false;
+	//int noOfOperands = GI->getNumOperands();
+	if(ConstantInt *CI = dyn_cast<ConstantInt>(GI->getOperand(GI->getNumOperands()-1))){// get the last operand of the getelementptr
+		c = CI->getZExtValue ();
+		if(c < 0){
+			c = c * -1;
+			isNeg = true;
+		}
+	}
+	Type *type = GI->getSourceElementType(); //get the type of getelementptr
+	if(StructType *t = dyn_cast<StructType>(type))
+	{	//check for struct type
+		const StructLayout *SL = D->getStructLayout(t);
+		offset+=SL->getSizeInBytes();
+	}
+	else if(ArrayType *t = dyn_cast<ArrayType>(type))
+	{
+		offset+= D->getTypeAllocSize(t) - c*D->getTypeAllocSize(t->getElementType()); //D->getTypeAllocSize(t)/t->getArrayNumElements();
+	}
+	else
+	{	//basic pointer increment or decrements
+
+		offset+=c*D->getTypeAllocSize(type);
+	}
+
+	if(isNeg)
+		offset = offset*-1;
+
+	Offset = llvm::ConstantInt::get(Type::getInt32Ty(Context),offset);
+	//errs() << offset << "\n";
+
+	return Offset;
+}
+
 
 Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Context)
 {
@@ -1540,8 +1677,8 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 			sizes.pop();
 			gelType = ArrayType::get(gelType,sz);
 			depth--;
-		}*/
-		//errs()<<depth<<": "<<*gelType<<"\n";
+		}
+		errs()<< "Depth : " << depth <<": "<<*gelType<<"\n";*/
 		bool isFnArr = 0;
 		if(dyn_cast<PointerType>(baseTy))
 		{
@@ -1551,9 +1688,11 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 		if(!isconstant)
 		{
 			//errs()<<"\n------\n"<<*GI<<"\n";
-			//temp= llvm::ConstantInt::get(Type::getInt64Ty(Context), D->getTypeAllocSize((baseTy->isPointerTy() && !isFnArr)?Type::getInt128Ty(Context):baseTy));
-			temp= llvm::ConstantInt::get(Type::getInt64Ty(Context), D->getTypeAllocSize(t->getElementType()));
-			//errs()<<*t->getElementType()<<"\n"<<D->getTypeAllocSize(t->getElementType())<<"\n";
+			if(baseTy != Type::getInt8PtrTy(Context))
+				temp= llvm::ConstantInt::get(Type::getInt64Ty(Context), D->getTypeAllocSize((baseTy->isPointerTy() && !isFnArr)?Type::getInt128Ty(Context):baseTy));
+			else
+				temp= llvm::ConstantInt::get(Type::getInt64Ty(Context), D->getTypeAllocSize(t->getElementType()));
+			//errs() << "Hello : " <<*t->getElementType()<<"\n"<<D->getTypeAllocSize(t->getElementType())<<"\n"<< D->getTypeAllocSize(baseTy);
 			IRBuilder<> builder(GI);
 			Offset = builder.CreateBinOp(Instruction::Mul,Offset, temp, "tmp");
 		}
