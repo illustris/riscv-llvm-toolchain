@@ -77,12 +77,6 @@ namespace {
 
 			unsigned long long ro_cook = 0xdeadbeef1337c0d3;
 			unsigned long ro_hash = 0xcd9a7e3c;
-
-			//to add the rodata_cookie at the beginning of all the global variables.
-			GlobalVariable *first_global_var = dyn_cast<GlobalVariable>(M.global_begin());
-
-			GlobalVariable *rodata_cookie = new GlobalVariable(M, Type::getInt64Ty(M.getContext()), true, GlobalValue::LinkageTypes::PrivateLinkage, ConstantInt::get(Type::getInt64Ty(M.getContext()),ro_cook), "ro_cookie",first_global_var);
-
 			// First pass creates duplicate definitions of structs with pointers
 			std::vector< StructType * > structs = M.getIdentifiedStructTypes();
 			for(auto &def : structs)
@@ -149,9 +143,10 @@ namespace {
 					rep_structs.insert(std::make_pair(frm, to));
 				}
 			}
-
+			int global_count = 0;
 			for(Module::global_iterator j = M.global_begin(), end = M.global_end(); j != end; ++j)
 			{
+				global_count++;
 				GlobalVariable *glob = dyn_cast<GlobalVariable>(j);
 				LLVMContext &GCtx = glob->getContext();
 				if(!glob->getType()->isPointerTy())
@@ -234,6 +229,16 @@ namespace {
 					//glob->mutateType(Type::getInt128Ty(GCtx));
 					//errs()<<*glob<<"\n";
 				}
+			}
+
+			GlobalVariable *rodata_cookie;
+			//to add the rodata_cookie at the beginning of all the global variables.
+			if(global_count != 0){
+				GlobalVariable *first_global_var = dyn_cast<GlobalVariable>(M.global_begin());
+
+				rodata_cookie = new GlobalVariable(M, Type::getInt64Ty(M.getContext()), true, GlobalValue::LinkageTypes::PrivateLinkage, ConstantInt::get(Type::getInt64Ty(M.getContext()),ro_cook), "ro_cookie",first_global_var);
+			}else{
+				rodata_cookie = new GlobalVariable(M, Type::getInt64Ty(M.getContext()), true, GlobalValue::LinkageTypes::PrivateLinkage, ConstantInt::get(Type::getInt64Ty(M.getContext()),ro_cook), "ro_cookie");
 			}
 			#ifdef debug_spass
 				errs()<<"First pass done\n";
@@ -635,7 +640,7 @@ namespace {
 						//errs()<<*j<<"\n";
 					}
 					if(F.getName() == "main" && f){
-						errs() << *j << "\n" ;
+						//errs() << *j << "\n" ;
 						argc = j;
 						f = false;
 					}
@@ -871,7 +876,6 @@ namespace {
 										args.push_back(trunc);//ptr
 										PtrToIntInst *ptr32 = new PtrToIntInst(rodata_cookie, Type::getInt32Ty(Ctx),"ptr32_1_",op);
 										args.push_back(ptr32);//base
-
 										//args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),0));//TODO bound
 
 										Value *size;
@@ -887,7 +891,6 @@ namespace {
 
 										BinaryOperator *bound = BinaryOperator::Create( Instruction::Add, trunc , size , "absolute_bnd", op); 
 										args.push_back(bound);
-
 										args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),ro_hash));//hash
 										ArrayRef<Value *> args_ref(args);
 
@@ -957,9 +960,7 @@ namespace {
 										args.push_back(trunc);//ptr
 										PtrToIntInst *ptr32 = new PtrToIntInst(rodata_cookie, Type::getInt32Ty(Ctx),"ptr32_1_",op);
 										args.push_back(ptr32);//base
-
 										//args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),size));//TODO bound
-
 										Value *size;
 										if(dyn_cast<GEPOperator>(op->getOperand(0))){
 
@@ -973,7 +974,6 @@ namespace {
 
 										BinaryOperator *bound = BinaryOperator::Create( Instruction::Add, trunc , size , "absolute_bnd", op); 
 										args.push_back(bound);
-
 										args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),ro_hash));//hash
 										ArrayRef<Value *> args_ref(args);
 
