@@ -9,6 +9,7 @@
 #include "llvm/IR/InstrTypes.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/CallSite.h"
+#include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include <stack>
 #include <map>
 #include <set>
@@ -883,7 +884,6 @@ namespace {
 
 											GEPOperator *gep = dyn_cast<GEPOperator>(op->getOperand(0));
 											size = resolveGEPOperator(gep,D,Ctx);
-
 										}else{
 
 											size =  llvm::ConstantInt::get(Type::getInt32Ty(Ctx),(D->getTypeAllocSize(op->getOperand(0)->getType()))); // need to check
@@ -963,12 +963,9 @@ namespace {
 										//args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),size));//TODO bound
 										Value *size;
 										if(dyn_cast<GEPOperator>(op->getOperand(0))){
-
 											GEPOperator *gep = dyn_cast<GEPOperator>(op->getOperand(0));
 											size = resolveGEPOperator(gep,D,Ctx);
-
 										}else{
-
 											size =  llvm::ConstantInt::get(Type::getInt32Ty(Ctx),(D->getTypeAllocSize(op->getOperand(0)->getType()))); // need to check
 										}
 
@@ -1265,6 +1262,102 @@ namespace {
 								{
 									//errs()<<"\n=************************************************\n";
 									continue;
+								}
+
+								//if called function is strcpy then check check length of both destination and source
+								//if strlen(destination) <  strlen(source) then exit 
+								if(op->getCalledFunction()->getName() == "strcpy") {
+									//errs() << "strcpy() " << *op << op->getParent()->getParent()->getName() << "\n" ;
+									if(i == B.begin())
+										continue;
+									//function prototype of strlen
+									std::vector<Type*> strlenParamTypes = {Type::getInt8PtrTy(Ctx)};
+									Type *strlenRetType = Type::getInt64Ty(Ctx);
+									FunctionType *strlenFuncType = FunctionType::get(strlenRetType, strlenParamTypes, false);
+									Value *strlenFunc = F.getParent()->getOrInsertFunction("strlen", strlenFuncType);
+
+									Value *dest = op->getOperand(0);
+									Value *source = op->getOperand(1);
+									IntToPtrInst *destPtr, *sourcePtr;
+									Type *ptype = Type::getInt8PtrTy(Ctx);
+									TruncInst *tr_lo;
+									Value *destLen,*sourceLen;
+
+									IRBuilder<> Builder(I);
+									Builder.SetInsertPoint(I);
+
+									if(dest->getType() == Type::getInt128Ty(Ctx)){
+										tr_lo = new TruncInst(dest, Type::getInt32Ty(Ctx),"fpr_low", op);
+										destPtr = new IntToPtrInst(tr_lo,ptype,"ptrc",op);
+										op->setOperand(0,destPtr);
+										op->getOperand(0)->mutateType(ptype);
+
+										//errs() << *dest << "\n" ;
+										Instruction *ins;
+										while(dyn_cast<Instruction>(dest)){
+											ins = dyn_cast<Instruction>(dest);
+											if(dyn_cast<AllocaInst>(ins)){
+												break;
+											}
+											dest = ins->getOperand(0);
+										}
+										if(!(dyn_cast<AllocaInst>(ins)->getAllocatedType() == Type::getInt128Ty(Ctx))){
+											uint64_t len = dyn_cast<AllocaInst>(ins)->getAllocatedType()->getArrayNumElements();
+											destLen = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),len);
+
+										}else{
+											std::vector<Value *> args;
+											args.push_back(destPtr);
+											ArrayRef<Value *> args_ref(args);
+											destLen = Builder.CreateCall(strlenFunc, args_ref,"dest_len");
+										}
+									}else{
+
+										if(dyn_cast<GEPOperator>(dest)){
+											GEPOperator *gep = dyn_cast<GEPOperator>(dest);
+											uint64_t len =  gep->getSourceElementType()->getArrayNumElements();
+											destLen = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),len);
+										}else{
+
+											std::vector<Value *> args;
+											args.push_back(dest);
+											ArrayRef<Value *> args_ref(args);
+											destLen = Builder.CreateCall(strlenFunc, args_ref,"dest_len");
+										}
+									}
+
+									if(source->getType() == Type::getInt128Ty(Ctx)){
+										tr_lo = new TruncInst(source, Type::getInt32Ty(Ctx),"fpr_low", op);
+										sourcePtr = new IntToPtrInst(tr_lo,ptype,"ptrc",op);
+										op->setOperand(1,sourcePtr);
+										op->getOperand(1)->mutateType(ptype);
+
+										std::vector<Value *> args;
+										args.push_back(sourcePtr);
+										ArrayRef<Value *> args_ref(args);
+										sourceLen = Builder.CreateCall(strlenFunc, args_ref,"source_len");
+									}else{
+										std::vector<Value *> args;
+										args.push_back(source);
+										ArrayRef<Value *> args_ref(args);
+										sourceLen = Builder.CreateCall(strlenFunc, args_ref,"source_len");
+									}
+
+
+									Value *res = Builder.CreateICmpULT (destLen, sourceLen,"check_len");
+									Instruction *ter = SplitBlockAndInsertIfThen(res, I,true);
+
+									Value *zero = llvm::ConstantInt::get(Type::getInt32Ty(Ctx),0);
+
+									std::vector<Type*> exitParamTypes = {Type::getInt32Ty(Ctx)};
+									Type *exitRetType = Type::getVoidTy(Ctx);
+									FunctionType *exitFuncType = FunctionType::get(exitRetType, exitParamTypes, true);
+									Value *exitF = F.getParent()->getOrInsertFunction("exit", exitFuncType);
+
+									Builder.SetInsertPoint(ter);
+									Builder.CreateCall(exitF,zero);
+
+									break;
 								}
 							}
 							//errs()<<*op<<"\n";
