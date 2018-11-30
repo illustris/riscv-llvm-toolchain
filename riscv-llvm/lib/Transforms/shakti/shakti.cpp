@@ -1268,6 +1268,7 @@ namespace {
 								//if strlen(destination) <  strlen(source) then exit 
 								if(op->getCalledFunction()->getName() == "strcpy") {
 									//errs() << "strcpy() " << *op << op->getParent()->getParent()->getName() << "\n" ;
+									bool isAllow = 1;
 									if(i == B.begin())
 										continue;
 									//function prototype of strlen
@@ -1294,14 +1295,28 @@ namespace {
 
 										//errs() << *dest << "\n" ;
 										Instruction *ins;
+										//dyn_cast<Instruction>(I->getOperand(0)->stripPointerCasts())
+										//stripPointerCasts() : required because all getOperand(0) is not instructions.
+										// it might be a global variable as well.
 										while(dyn_cast<Instruction>(dest)){
 											ins = dyn_cast<Instruction>(dest);
 											if(dyn_cast<AllocaInst>(ins)){
 												break;
 											}
-											dest = ins->getOperand(0);
+											dest = ins->getOperand(0)->stripPointerCasts();
 										}
-										if(!(dyn_cast<AllocaInst>(ins)->getAllocatedType() == Type::getInt128Ty(Ctx))){
+
+										if(dyn_cast<Instruction>(dest) == NULL ){ // global varibale found
+											if(dest->getType()->isArrayTy()){
+												std::vector<Value *> args;
+												args.push_back(destPtr);
+												ArrayRef<Value *> args_ref(args);
+												destLen = Builder.CreateCall(strlenFunc, args_ref,"dest_len");
+											}else{
+												isAllow = 0;
+											}
+										}
+										else if(!(dyn_cast<AllocaInst>(ins)->getAllocatedType() == Type::getInt128Ty(Ctx))){
 											uint64_t len = dyn_cast<AllocaInst>(ins)->getAllocatedType()->getArrayNumElements();
 											destLen = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),len);
 
@@ -1325,7 +1340,6 @@ namespace {
 											destLen = Builder.CreateCall(strlenFunc, args_ref,"dest_len");
 										}
 									}
-
 									if(source->getType() == Type::getInt128Ty(Ctx)){
 										tr_lo = new TruncInst(source, Type::getInt32Ty(Ctx),"fpr_low", op);
 										sourcePtr = new IntToPtrInst(tr_lo,ptype,"ptrc",op);
@@ -1343,6 +1357,8 @@ namespace {
 										sourceLen = Builder.CreateCall(strlenFunc, args_ref,"source_len");
 									}
 
+									if(isAllow){
+
 
 									Value *res = Builder.CreateICmpULT (destLen, sourceLen,"check_len");
 									Instruction *ter = SplitBlockAndInsertIfThen(res, I,true);
@@ -1356,8 +1372,8 @@ namespace {
 
 									Builder.SetInsertPoint(ter);
 									Builder.CreateCall(exitF,zero);
-
 									break;
+									}
 								}
 							}
 							//errs()<<*op<<"\n";
