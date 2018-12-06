@@ -18,7 +18,7 @@
 
 using namespace llvm;
 
-Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Context);
+Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Context,std::map <StructType*, StructType*> rep_structs);
 Value* resolveGEPOperator(GEPOperator *GI,DataLayout *D,LLVMContext &Context);
 namespace {
 	struct shaktiPass : public ModulePass
@@ -312,10 +312,20 @@ namespace {
 													//errs()<<"HERE: "<<*(rep_structs.at(st))<<"\n";
 													StructType *to = rep_structs.at(st);
 													const StructLayout *SL = D->getStructLayout(to);
-													unsigned long long sz = SL->getSizeInBytes();
+													const StructLayout *SL1 = D->getStructLayout(st);
+													unsigned long long new_sz = SL->getSizeInBytes();
+													unsigned long long old_sz = SL1->getSizeInBytes();
 													//errs()<<*op->getOperand(0)<<"\n"<<*nextbc<<"\n"<<sz<<"\n";
-													if(dyn_cast<ConstantInt>(op->getOperand(0)))
-														op->setOperand(0,llvm::ConstantInt::get(Type::getInt64Ty(Ctx),sz));
+													if(dyn_cast<ConstantInt>(op->getOperand(0))){
+														unsigned long long operand_sz = dyn_cast<ConstantInt>(op->getOperand(0))->getZExtValue();
+														//this check is required because if we malloc 20*sizeof(some_struct)
+														//in llvm IR it is a constant value . so to check that this check is required
+														if(operand_sz != old_sz){
+															new_sz = new_sz * (operand_sz / old_sz) ;
+														}
+														//errs() << "old : " << old_sz << " new : " << new_sz << " size of operand : " << operand_sz << "\n" ;
+														op->setOperand(0,llvm::ConstantInt::get(Type::getInt64Ty(Ctx),new_sz));
+													}
 												}
 											}
 										}
@@ -1163,7 +1173,7 @@ namespace {
 
 							modified=true;
 							//errs()<<"\n-----------\n"<<*op<<"\n-----------\n";
-							Value *offset = resolveGetElementPtr(op,D,Ctx);
+							Value *offset = resolveGetElementPtr(op,D,Ctx,rep_structs);
 
 							ZExtInst *zext_binop = new ZExtInst(offset, Type::getInt128Ty(Ctx), "zextarrayidx", op);
 							BinaryOperator *binop =  BinaryOperator::Create(Instruction::Add, op->getOperand(0), zext_binop , "arrayidx", op);
@@ -1716,7 +1726,7 @@ Value* resolveGEPOperator(GEPOperator *GI,DataLayout *D,LLVMContext &Context)
 }
 
 
-Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Context)
+Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Context,std::map <StructType*, StructType*> rep_structs)
 {
 	int offset = 0;
 	Value *Offset,*temp;
@@ -1742,6 +1752,12 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 	Type *type = GI->getSourceElementType(); //get the type of getelementptr
 	if(StructType *t = dyn_cast<StructType>(type))
 	{	//check for struct type
+
+		if(rep_structs.find(t) != rep_structs.end()){
+			//errs() << "Here \n" ;
+			t = rep_structs.at(t);
+		}
+
 		const StructLayout *SL = D->getStructLayout(t);
 
 		if(!isconstant)
