@@ -1521,6 +1521,12 @@ namespace {
 									}
 									op->setOperand(1,llvm::ConstantInt::get(Type::getInt128Ty(Ctx),0));
 								}
+								if(dyn_cast<ConstantPointerNull>(o1))
+								{
+									//change operand(0) to 0 if operand(1) is of type i128
+									if(o2->getType() == Type::getInt128Ty(Ctx))
+										op->setOperand(0,llvm::ConstantInt::get(Type::getInt128Ty(Ctx),0));
+								}
 								//if operand(1) is of type i8* and operand(0) of type i128
 								else if(op->getOperand(1)->getType()->isPointerTy()){
 									//errs() << "Here.....\n" ;
@@ -1555,6 +1561,41 @@ namespace {
 									Builder.SetInsertPoint(op);
 									Value *fpr = Builder.CreateCall(craftFunc, args_ref,op->getName()+"fprz");
 									op->setOperand(1,fpr);
+								}
+								//if operand(0) is of type i8* and operand(1) of type i128
+								else if(op->getOperand(0)->getType()->isPointerTy()){
+									//errs() << "Here.....\n" ;
+									//errs() << *op->getOperand(0) << "\n" ;
+									PtrToIntInst *trunc = new PtrToIntInst(op->getOperand(0), Type::getInt32Ty(Ctx),"pti1_",op);
+
+									std::vector<Value *> args;
+									args.push_back(trunc);//ptr
+									PtrToIntInst *ptr32 = new PtrToIntInst(rodata_cookie, Type::getInt32Ty(Ctx),"ptr32_1_",op);
+									args.push_back(ptr32);//base
+
+									//args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),0));//TODO bound
+
+									//Value *size =  llvm::ConstantInt::get(Type::getInt32Ty(Ctx),(D->getTypeAllocSize(op->getOperand(1)->getType()))); // need to check
+									Value *size;
+									if(dyn_cast<GEPOperator>(op->getOperand(0))){
+
+										GEPOperator *gep = dyn_cast<GEPOperator>(op->getOperand(0));
+										size = resolveGEPOperator(gep,D,Ctx);
+
+									}else{
+
+										size =  llvm::ConstantInt::get(Type::getInt32Ty(Ctx),(D->getTypeAllocSize(op->getOperand(0)->getType()))); // need to check
+									}
+									BinaryOperator *bound = BinaryOperator::Create( Instruction::Add, trunc , size , "absolute_bnd", op); 
+									args.push_back(bound);
+
+									args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),ro_hash));//hash
+									ArrayRef<Value *> args_ref(args);
+
+									IRBuilder<> Builder(I);
+									Builder.SetInsertPoint(op);
+									Value *fpr = Builder.CreateCall(craftFunc, args_ref,op->getName()+"fprz");
+									op->setOperand(0,fpr);
 								}
 							}
 						}
