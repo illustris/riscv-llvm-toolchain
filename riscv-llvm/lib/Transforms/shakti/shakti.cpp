@@ -145,6 +145,7 @@ namespace {
 				}
 			}
 			int global_count = 0;
+			std::map <GlobalVariable*, Constant*> glob_var;
 			for(Module::global_iterator j = M.global_begin(), end = M.global_end(); j != end; ++j)
 			{
 				global_count++;
@@ -207,6 +208,10 @@ namespace {
 					}
 
 					//reach here  only if its a pointer and not a global function pointer
+
+					//if a global pointer is initialised directly as ptr = &val.
+					//then in main first store this value in the new global variable created.
+
 					GlobalVariable *glob2 = new GlobalVariable
 					(
 						M,
@@ -219,6 +224,9 @@ namespace {
 					);
 					//errs()<<"CTXT: "<<&(glob->getContext())<<"\t"<<&(glob2->getContext())<<"\n";
 					glob->replaceAllUsesWith(glob2);
+					if(!glob->getInitializer()->isNullValue()){
+						glob_var.insert(std::make_pair(glob2, glob->getInitializer()));
+					}
 					//glob2->setParent(glob->getParent());
 					//errs()<<*glob<<"\n"<<*glob2<<"\n";
 					j--;
@@ -612,6 +620,7 @@ namespace {
 
 			// Fifth pass replaces pointers, store and load
 			//check the value of ptr_to_st_cook and ptr_to_st_hash
+			//errs() << "size of global variable map :  " << glob_var.size() << "\n" ;
 			for (auto &F : M)
 			{
 				DataLayout *D = new DataLayout(&M);
@@ -681,6 +690,53 @@ namespace {
 						trunc->setOperand(0,j);
 					}
 				}//*/
+
+				//add those initializers of global variables here
+				if(!glob_var.empty() && F.getName() == "main"){
+					while (!glob_var.empty()){
+						//errs() << *glob_var.begin()->first << " => " << *glob_var.begin()->second << '\n';
+						Value *val;
+						GlobalVariable *glob_ptr = dyn_cast<GlobalVariable>(glob_var.begin()->first);
+						PtrToIntInst *trunc;
+						std::vector<Value *> args;
+						if(dyn_cast<GEPOperator>(glob_var.begin()->second)){
+							val = glob_var.begin()->second ;
+							trunc = new PtrToIntInst(val, Type::getInt32Ty(Ctx),"pti1_",insertPoint);
+						}else{
+							val = dyn_cast<Value>(glob_var.begin()->second);
+							trunc = new PtrToIntInst(val, Type::getInt32Ty(Ctx),"pti1_",insertPoint);
+						}
+
+						if(!(val->getType() == Type::getInt128Ty(Ctx))){
+							//create a fat pointer out of it and then store it in gloval_var.begin()->first.
+							args.push_back(trunc);//ptr
+							PtrToIntInst *ptr32 = new PtrToIntInst(rodata_cookie, Type::getInt32Ty(Ctx),"ptr32_1_",insertPoint);
+							args.push_back(ptr32);//base
+
+							Value *size;
+							if(dyn_cast<GEPOperator>(val)){
+
+								GEPOperator *gep = dyn_cast<GEPOperator>(val);
+								size = resolveGEPOperator(gep,D,Ctx);
+							}else{
+								size =  llvm::ConstantInt::get(Type::getInt32Ty(Ctx),(D->getTypeAllocSize(val->getType()))); // need to check
+							}
+
+							BinaryOperator *bound = BinaryOperator::Create( Instruction::Add, trunc , size , "absolute_bnd", insertPoint);
+							args.push_back(bound);
+							args.push_back(ConstantInt::get(Type::getInt32Ty(Ctx),ro_hash));//hash
+							ArrayRef<Value *> args_ref(args);
+
+							IRBuilder<> Builder(insertPoint);
+							Builder.SetInsertPoint(insertPoint);
+							Value *fpr = Builder.CreateCall(craftFunc, args_ref,val->getName()+"_fprz");
+							new StoreInst (fpr, glob_ptr, insertPoint);
+						}else{
+							new StoreInst (val, glob_ptr, insertPoint);
+						}
+						glob_var.erase(glob_var.begin());
+					}
+				}
 
 				Module *m = F.getParent();
 				Function *val = Intrinsic::getDeclaration(m, Intrinsic::riscv_validate);	// get hash intrinsic declaration
