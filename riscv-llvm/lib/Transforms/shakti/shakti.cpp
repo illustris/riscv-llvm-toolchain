@@ -621,6 +621,7 @@ namespace {
 			// Fifth pass replaces pointers, store and load
 			//check the value of ptr_to_st_cook and ptr_to_st_hash
 			//errs() << "size of global variable map :  " << glob_var.size() << "\n" ;
+			Value *invalidStr =  NULL;
 			for (auto &F : M)
 			{
 				DataLayout *D = new DataLayout(&M);
@@ -1426,17 +1427,28 @@ namespace {
 									if(isAllow){
 
 
-									Value *res = Builder.CreateICmpULT (destLen, sourceLen,"check_len");
+									//this is changed from ULT to ULE because string of length 10 can contain 
+									// 9 characters and ends with \0 so one character reserved for EOC
+									Value *res = Builder.CreateICmpULE (destLen, sourceLen,"check_len");
 									Instruction *ter = SplitBlockAndInsertIfThen(res, I,true);
 
 									Value *zero = llvm::ConstantInt::get(Type::getInt32Ty(Ctx),0);
 
+									//creating function call prototype to exit(0)
 									std::vector<Type*> exitParamTypes = {Type::getInt32Ty(Ctx)};
 									Type *exitRetType = Type::getVoidTy(Ctx);
-									FunctionType *exitFuncType = FunctionType::get(exitRetType, exitParamTypes, true);
+									FunctionType *exitFuncType = FunctionType::get(exitRetType, exitParamTypes, false);
 									Value *exitF = F.getParent()->getOrInsertFunction("exit", exitFuncType);
 
+									//creating a function call prototype to printf to print "Invalid Size"
+									std::vector<Type*> printParamTypes = {Type::getInt8PtrTy(Ctx)};
+									Type *printRetType = Type::getInt32Ty(Ctx);
+									FunctionType *printFuncType = FunctionType::get(printRetType, printParamTypes, true);
+									Value *printF = F.getParent()->getOrInsertFunction("printf", printFuncType);
+									if(invalidStr == NULL)
+										invalidStr = Builder.CreateGlobalStringPtr("Source Length greater than destination length\n");
 									Builder.SetInsertPoint(ter);
+									Builder.CreateCall(printF,invalidStr);
 									Builder.CreateCall(exitF,zero);
 									break;
 									}
