@@ -1931,7 +1931,7 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 			Offset = builder.CreateBinOp(Instruction::Mul,Offset, temp, "tmp");
 		}
 		else
-			offset+=c*D->getTypeAllocSize(t->getElementType()); //D->getTypeAllocSize(t)/t->getArrayNumElements();
+			offset+=c*D->getTypeAllocSize( (t->getElementType()->isPointerTy() && !isFnArr) ? Type::getInt128Ty(Context):t->getElementType() ); //D->getTypeAllocSize(t)/t->getArrayNumElements();
 	}
 	else
 	{	//basic pointer increment or decrements
