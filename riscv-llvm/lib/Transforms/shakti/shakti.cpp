@@ -386,7 +386,6 @@ namespace {
 			PtrToIntInst *ptr_to_st_cook;
 
 			std::map<std::string,std::vector<Instruction *>> mapInst;
-
 			for (auto &F : M)
 			{
 				if(F.isDeclaration())
@@ -396,6 +395,12 @@ namespace {
 				LLVMContext &Ctx = F.getContext();
 				Module *m = F.getParent();
 				Function *hash = Intrinsic::getDeclaration(m, Intrinsic::riscv_hash);	// get hash intrinsic declaration
+
+				std::vector<Type*> randomParamTypes;// = {Type::getVoidTy(Ctx)};
+				Type *randomRetType = Type::getInt64Ty(Ctx);
+				FunctionType *randomFuncType = FunctionType::get(randomRetType, randomParamTypes, false);
+				Value *randomF = F.getParent()->getOrInsertFunction("random64", randomFuncType);
+
 				AllocaInst *st_cook;	// pointer to stack cookie
 				for (auto &B : F)
 				{
@@ -425,6 +430,8 @@ namespace {
 						//errs() << *I << "\n" ;
 						st_cook = new AllocaInst(Type::getInt64Ty(Ctx), 0,"stack_cookie", FPR);	// alloca stack cookie
 						ptr_to_st_cook = new PtrToIntInst(st_cook,Type::getInt32Ty(Ctx), "stack_cookie_32", FPR);
+						CallInst *getRandom = CallInst::Create (randomF, "", FPR);
+						new StoreInst(getRandom,st_cook,FPR);
 
 						// Set up intrinsic arguments
 						std::vector<Value *> args;
@@ -449,6 +456,8 @@ namespace {
 				//Call hash again to burn the cookie
 				IRBuilder<> Builder(RI);
 				Builder.SetInsertPoint(RI);
+				CallInst *burnRandom = CallInst::Create (randomF, "", RI);
+				new StoreInst(burnRandom,st_cook,RI);
 				Builder.CreateCall(hash, args_ref,"stack_cookie_burn");
 				//errs() << "Adding done in function " << F.getName() << "\n" ;
 
