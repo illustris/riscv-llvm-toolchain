@@ -1340,7 +1340,100 @@ namespace {
 									continue;
 								}
 
-								//if called function is strcpy then check check length of both destination and source
+                                                                //if called function is fgets, then check size < destination buffer 
+                                                                if(op->getCalledFunction()->getName() == "fgets" ){
+									bool isAllow = 1;
+									if(i == B.begin())
+										continue;
+
+									//function prototype of strlen
+									std::vector<Type*> strlenParamTypes = {Type::getInt8PtrTy(Ctx)};
+									Type *strlenRetType = Type::getInt64Ty(Ctx);
+									FunctionType *strlenFuncType = FunctionType::get(strlenRetType, strlenParamTypes, false);
+									Value *strlenFunc = F.getParent()->getOrInsertFunction("strlen", strlenFuncType);
+									Value *dest = op->getOperand(0);
+                                                                        Value *size = op->getOperand(1);
+									Value *file = op->getOperand(2);
+									IntToPtrInst *destPtr,*filePtr;
+									Type *ptype = Type::getInt8PtrTy(Ctx);
+									TruncInst *tr_lo,*file_lo;
+									Value *destLen;
+
+									file_lo = new TruncInst(file, Type::getInt32Ty(Ctx),"fpr_low", op);
+									filePtr = new IntToPtrInst(file_lo,op->getFunctionType()->getParamType(2),"ptrc",op);
+									op->setOperand(2,filePtr);
+									op->getOperand(2)->mutateType(op->getFunctionType()->getParamType(2));
+
+									IRBuilder<> Builder(I);
+									Builder.SetInsertPoint(I);
+
+									if(dest->getType() == Type::getInt128Ty(Ctx)){
+										tr_lo = new TruncInst(dest, Type::getInt32Ty(Ctx),"fpr_low", op);
+										destPtr = new IntToPtrInst(tr_lo,ptype,"ptrc",op);
+										op->setOperand(0,destPtr);
+										op->getOperand(0)->mutateType(ptype);
+
+										//errs() << *dest << "\n" ;
+										Instruction *ins;
+										//dyn_cast<Instruction>(I->getOperand(0)->stripPointerCasts())
+										//stripPointerCasts() : required because all getOperand(0) is not instructions.
+										// it might be a global variable as well.
+										while(dyn_cast<Instruction>(dest)){
+											ins = dyn_cast<Instruction>(dest);
+											if(dyn_cast<AllocaInst>(ins)){
+												break;
+											}
+											dest = ins->getOperand(0)->stripPointerCasts();
+										}
+
+										if(dyn_cast<Instruction>(dest) == NULL ){ // global varibale found
+											if(dest->getType()->isArrayTy()){
+												std::vector<Value *> args;
+												args.push_back(destPtr);
+												ArrayRef<Value *> args_ref(args);
+												destLen = Builder.CreateCall(strlenFunc, args_ref,"dest_len");
+											}else{
+												isAllow = 0;
+											}
+										}
+										else if(!(dyn_cast<AllocaInst>(ins)->getAllocatedType() == Type::getInt128Ty(Ctx))){
+											uint64_t len = dyn_cast<AllocaInst>(ins)->getAllocatedType()->getArrayNumElements();
+											destLen = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),len);
+
+										}else{
+											std::vector<Value *> args;
+											args.push_back(destPtr);
+											ArrayRef<Value *> args_ref(args);
+											destLen = Builder.CreateCall(strlenFunc, args_ref,"dest_len");
+										}
+									}
+									if(isAllow){
+
+									Value *res = Builder.CreateICmpULT (destLen, size,"check_len");
+									Instruction *ter = SplitBlockAndInsertIfThen(res, I,true);
+
+									Value *zero = llvm::ConstantInt::get(Type::getInt32Ty(Ctx),0);
+
+									//creating function call prototype to exit(0)
+									std::vector<Type*> exitParamTypes = {Type::getInt32Ty(Ctx)};
+									Type *exitRetType = Type::getVoidTy(Ctx);
+									FunctionType *exitFuncType = FunctionType::get(exitRetType, exitParamTypes, false);
+									Value *exitF = F.getParent()->getOrInsertFunction("exit", exitFuncType);
+
+									//creating a function call prototype to printf to print "Invalid Size"
+									std::vector<Type*> printParamTypes = {Type::getInt8PtrTy(Ctx)};
+									Type *printRetType = Type::getInt32Ty(Ctx);
+									FunctionType *printFuncType = FunctionType::get(printRetType, printParamTypes, true);
+									Value *printF = F.getParent()->getOrInsertFunction("printf", printFuncType);
+									if(invalidStr == NULL)
+										invalidStr = Builder.CreateGlobalStringPtr("Size greater than destination length\n");
+									Builder.SetInsertPoint(ter);
+									Builder.CreateCall(printF,invalidStr);
+									Builder.CreateCall(exitF,zero);
+									break;
+									}
+                                                                }
+                                                                //if called function is strcpy then check check length of both destination and source
 								//if strlen(destination) <  strlen(source) then exit 
 								if(op->getCalledFunction()->getName() == "strcpy") {
 									//errs() << "strcpy() " << *op << op->getParent()->getParent()->getName() << "\n" ;
