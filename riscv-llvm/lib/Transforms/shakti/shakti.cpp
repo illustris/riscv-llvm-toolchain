@@ -980,6 +980,36 @@ namespace {
 										//errs() << "store pointer type : " << *storeptrtype << "\n" ;
 										op->getOperand(1)->mutateType(storeptrtype);
 									}
+									if(dyn_cast<GEPOperator>(op->getOperand(1))){
+										if(i == B.begin())
+											continue;
+
+										GEPOperator *operand = dyn_cast<GEPOperator>(op->getOperand(1));
+										Value *zero = llvm::ConstantInt::get(Type::getInt32Ty(Ctx),0);
+
+										IRBuilder<> Builder(I);
+										Builder.SetInsertPoint(I);
+										Value *res = Builder.CreateICmpUGT (operand->getOperand(1), zero,"");
+										Instruction *ter = SplitBlockAndInsertIfThen(res, I,true);
+
+										//creating function call prototype to exit(0)
+										std::vector<Type*> exitParamTypes = {Type::getInt32Ty(Ctx)};
+										Type *exitRetType = Type::getVoidTy(Ctx);
+										FunctionType *exitFuncType = FunctionType::get(exitRetType, exitParamTypes, false);
+										Value *exitF = F.getParent()->getOrInsertFunction("exit", exitFuncType);
+
+										//creating a function call prototype to printf to print "Invalid Size"
+										std::vector<Type*> printParamTypes = {Type::getInt8PtrTy(Ctx)};
+										Type *printRetType = Type::getInt32Ty(Ctx);
+										FunctionType *printFuncType = FunctionType::get(printRetType, printParamTypes, true);
+										Value *printF = F.getParent()->getOrInsertFunction("printf", printFuncType);
+										if(invalidStr == NULL)
+											invalidStr = Builder.CreateGlobalStringPtr("Pointer access out of range\n");
+										Builder.SetInsertPoint(ter);
+										Builder.CreateCall(printF,invalidStr);
+										Builder.CreateCall(exitF,zero);
+										break;
+									}
 									continue;
 								}
 								//else if storing i128 to i128*, do nothing
