@@ -20,6 +20,7 @@ using namespace llvm;
 
 Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Context,std::map <StructType*, StructType*> rep_structs);
 Value* resolveGEPOperator(GEPOperator *GI,DataLayout *D,LLVMContext &Context);
+void staticLoadStore(GEPOperator* operand,Instruction *I,Function *F,std::string str,LLVMContext &Ctx);
 namespace {
 	struct shaktiPass : public ModulePass
 	{
@@ -985,29 +986,7 @@ namespace {
 											continue;
 
 										GEPOperator *operand = dyn_cast<GEPOperator>(op->getOperand(1));
-										Value *zero = llvm::ConstantInt::get(Type::getInt32Ty(Ctx),0);
-
-										IRBuilder<> Builder(I);
-										Builder.SetInsertPoint(I);
-										Value *res = Builder.CreateICmpUGT (operand->getOperand(1), zero,"");
-										Instruction *ter = SplitBlockAndInsertIfThen(res, I,true);
-
-										//creating function call prototype to exit(0)
-										std::vector<Type*> exitParamTypes = {Type::getInt32Ty(Ctx)};
-										Type *exitRetType = Type::getVoidTy(Ctx);
-										FunctionType *exitFuncType = FunctionType::get(exitRetType, exitParamTypes, false);
-										Value *exitF = F.getParent()->getOrInsertFunction("exit", exitFuncType);
-
-										//creating a function call prototype to printf to print "Invalid Size"
-										std::vector<Type*> printParamTypes = {Type::getInt8PtrTy(Ctx)};
-										Type *printRetType = Type::getInt32Ty(Ctx);
-										FunctionType *printFuncType = FunctionType::get(printRetType, printParamTypes, true);
-										Value *printF = F.getParent()->getOrInsertFunction("printf", printFuncType);
-										if(invalidStr == NULL)
-											invalidStr = Builder.CreateGlobalStringPtr("Pointer access out of range\n");
-										Builder.SetInsertPoint(ter);
-										Builder.CreateCall(printF,invalidStr);
-										Builder.CreateCall(exitF,zero);
+										staticLoadStore(operand,I,&F,"Pointer access out of range!!!!!",Ctx);
 										break;
 									}
 									continue;
@@ -1157,6 +1136,15 @@ namespace {
 									}
 									op->mutateType(base_type);
 								}
+
+								//if static then it will get loaded directly
+								/*if(dyn_cast<GEPOperator>(op->getOperand(0))){
+									if(i == B.begin())
+										continue;
+									GEPOperator *operand = dyn_cast<GEPOperator>(op->getOperand(0));
+									staticLoadStore(operand,I,&F,"Pointer access out of range.....",Ctx);
+									break;
+								}*/
 								continue;
 							}
 							Type *loadtype = op->getType();
@@ -1924,6 +1912,35 @@ namespace {
 			return modified;
 		}
 	};
+}
+
+void staticLoadStore(GEPOperator* operand,Instruction *I,Function *F,std::string str,LLVMContext &Ctx){
+
+	Value *errorStr=NULL;
+	//errs() << "inside this function \n" << *F << "\n" ;
+	Value *zero = llvm::ConstantInt::get(Type::getInt32Ty(Ctx),0);
+	Value *val = llvm::ConstantInt::get(operand->getOperand(1)->getType(),0);
+	IRBuilder<> Builder(I);
+	Builder.SetInsertPoint(I);
+	Value *res = Builder.CreateICmpUGT (operand->getOperand(1), val,"");
+	Instruction *ter = SplitBlockAndInsertIfThen(res, I,true);
+	//creating function call prototype to exit(0)
+	std::vector<Type*> exitParamTypes = {Type::getInt32Ty(Ctx)};
+	Type *exitRetType = Type::getVoidTy(Ctx);
+	FunctionType *exitFuncType = FunctionType::get(exitRetType, exitParamTypes, false);
+	Value *exitF = F->getParent()->getOrInsertFunction("exit", exitFuncType);
+
+	//creating a function call prototype to printf to print "Invalid Size"
+	std::vector<Type*> printParamTypes = {Type::getInt8PtrTy(Ctx)};
+	Type *printRetType = Type::getInt32Ty(Ctx);
+	FunctionType *printFuncType = FunctionType::get(printRetType, printParamTypes, true);
+	Value *printF = F->getParent()->getOrInsertFunction("printf", printFuncType);
+	if(errorStr == NULL)
+		errorStr = Builder.CreateGlobalStringPtr(str);
+	Builder.SetInsertPoint(ter);
+	Builder.CreateCall(printF,errorStr);
+	Builder.CreateCall(exitF,zero);
+
 }
 
 Value* resolveGEPOperator(GEPOperator *GI,DataLayout *D,LLVMContext &Context)
