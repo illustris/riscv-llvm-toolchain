@@ -257,6 +257,7 @@ namespace {
 			// Second pass replaces malloc and free
 			Value *mallocFunc;
 			Value *freeFunc;
+			Value *reallocFunc;
 
 			for (auto &F : M)
 			{
@@ -291,6 +292,17 @@ namespace {
 				// Make safefree declaration, get pointer to it
 				Value *safefreeFunc = F.getParent()->getOrInsertFunction("safefree", safeFreeFuncType);
 
+				//adding function prototype for saferealloc and realloc
+				std::vector<Type*> reallocParamTypes = {Type::getInt8PtrTy(Ctx),Type::getInt64Ty(Ctx)};
+				Type *reallocRetType = Type::getInt8PtrTy(Ctx);
+				FunctionType *reallocFuncType = FunctionType::get(reallocRetType, reallocParamTypes, false);
+				reallocFunc = F.getParent()->getOrInsertFunction("realloc", reallocFuncType);
+
+				std::vector<Type*> safeReallocParamTypes = {Type::getInt128Ty(Ctx),Type::getInt64Ty(Ctx)};
+				Type *safeReallocRetType = Type::getInt128Ty(Ctx);
+				FunctionType *safeReallocFuncType = FunctionType::get(safeReallocRetType, safeReallocParamTypes, false);
+				Value *safereallocFunc = F.getParent()->getOrInsertFunction("saferealloc", safeReallocFuncType);
+
 				// Iterate over BBs in F
 				for (auto &B : F)
 				{
@@ -301,7 +313,7 @@ namespace {
 						if (auto *op = dyn_cast<CallInst>(&I))
 						{
 							// If call invokes malloc
-							if((op->getCalledValue()) == (mallocFunc))
+							if((op->getCalledValue() == mallocFunc) || (op->getCalledValue() == reallocFunc))
 							{
 								BitCastInst *nextbc;
 								//errs()<<"*******\n"<<*op<<"\n"<<*op->getNextNode()<<"\n-------\n";
@@ -325,15 +337,26 @@ namespace {
 													unsigned long long new_sz = SL->getSizeInBytes();
 													unsigned long long old_sz = SL1->getSizeInBytes();
 													//errs()<<*op->getOperand(0)<<"\n"<<*nextbc<<"\n"<<sz<<"\n";
-													if(dyn_cast<ConstantInt>(op->getOperand(0))){
-														unsigned long long operand_sz = dyn_cast<ConstantInt>(op->getOperand(0))->getZExtValue();
+													//check size . if malloc then operand 0 else operand 1
+													Value *getOperand;
+													if(op->getCalledValue() == mallocFunc){
+														getOperand = op->getOperand(0);
+													}else{ // for realloc
+														getOperand = op->getOperand(1);
+													}
+													if(dyn_cast<ConstantInt>(getOperand)){
+														unsigned long long operand_sz = dyn_cast<ConstantInt>(getOperand)->getZExtValue();
 														//this check is required because if we malloc 20*sizeof(some_struct)
 														//in llvm IR it is a constant value . so to check that this check is required
 														if(operand_sz != old_sz){
 															new_sz = new_sz * (operand_sz / old_sz) ;
 														}
 														//errs() << "old : " << old_sz << " new : " << new_sz << " size of operand : " << operand_sz << "\n" ;
-														op->setOperand(0,llvm::ConstantInt::get(Type::getInt64Ty(Ctx),new_sz));
+														if(op->getCalledValue() == mallocFunc){
+															op->setOperand(0,llvm::ConstantInt::get(Type::getInt64Ty(Ctx),new_sz));
+														}else{//realloc
+															op->setOperand(1,llvm::ConstantInt::get(Type::getInt64Ty(Ctx),new_sz));
+														}
 													}
 												}
 											}
@@ -345,8 +368,13 @@ namespace {
 								//op->print(llvm::errs(), NULL);
 								//errs()<<"\nwith:\n";
 								// Replace malloc with safemalloc in call
-								op->setCalledFunction (safemallocFunc);
-								op->mutateType(Type::getInt128Ty(Ctx));
+								if(op->getCalledValue() == mallocFunc){
+									op->setCalledFunction (safemallocFunc);
+									op->mutateType(Type::getInt128Ty(Ctx));
+								}else{
+									op->setCalledFunction (safereallocFunc);
+									op->mutateType(Type::getInt128Ty(Ctx));
+								}
 								//op->print(llvm::errs(), NULL);
 								//errs()<<"\n----------------\n";
 
@@ -1352,7 +1380,7 @@ namespace {
 									op->setAttributes(A);
 									continue;
 								}
-								if(op->getCalledFunction()->getName().contains("safefree"))
+								if(op->getCalledFunction()->getName().contains("safefree") || op->getCalledFunction()->getName().contains("saferealloc") )
 								{
 									//errs()<<"\n=************************************************\n";
 									continue;
