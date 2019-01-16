@@ -14,7 +14,7 @@
 #include <map>
 #include <set>
 //#define debug_spass
-//#define debug_spass_dmodule
+#define debug_spass_dmodule
 
 using namespace llvm;
 
@@ -440,22 +440,23 @@ namespace {
 					}
 
 					for (auto &I : B){	// Iterate over instructions to get the last Alloca and Return Inst
-						if (dyn_cast<AllocaInst>(&I) && !stack_cook_ins)
+						if (!dyn_cast<AllocaInst>(&I) && !stack_cook_ins && !flag)
 						{
 							AI = &I;
 							flag = true;
 						}
-						else if (dyn_cast<ReturnInst>(&I))
+						if (dyn_cast<ReturnInst>(&I))
 						{	// If return instruction
 							RI = &I;
 						}
 					}
 					if(!stack_cook_ins){
-						if(flag)
+						/*if(flag)
 							FPR = AI->getNextNode();	//that means there is a alloca so go to next instruction and then insert before it
 						else
 							FPR = AI; //no alloca inst is there. only printf. then insert before printf
-
+*/
+						FPR = AI;
 						//errs() << *I << "\n" ;
 						st_cook = new AllocaInst(Type::getInt64Ty(Ctx), 0,"stack_cookie", FPR);	// alloca stack cookie
 						ptr_to_st_cook = new PtrToIntInst(st_cook,Type::getInt32Ty(Ctx), "stack_cookie_32", FPR);
