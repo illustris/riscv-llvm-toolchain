@@ -664,7 +664,6 @@ namespace {
 			{
 				DataLayout *D = new DataLayout(&M);
 				LLVMContext &Ctx = F.getContext();
-
 				/*std::vector<Type*> printPtrParamTypes = {Type::getInt128Ty(Ctx)};
 				Type *printPtrRetType = Type::getVoidTy(Ctx);//Type::getInt128Ty(Ctx);
 				FunctionType *printPtrFuncType = FunctionType::get(printPtrRetType, printPtrParamTypes, false);
@@ -1332,7 +1331,7 @@ namespace {
 											continue;
 										}
 										//check if it is not a declaration and i8* of getelement ptr or not
-										if(!op->getCalledFunction()->isDeclaration() ){
+										if( (op->getCalledFunction()!= NULL ) &&  (!op->getCalledFunction()->isDeclaration()) ){
 
 											PtrToIntInst *trunc = new PtrToIntInst(op->getOperand(i), Type::getInt32Ty(Ctx),"pti1_",op);
 											std::vector<Value *> args;
@@ -1696,6 +1695,12 @@ namespace {
 									{
 										ptype = op->getCalledFunction()->getFunctionType()->params()[i];
 									}
+								}else{
+
+									if(!dyn_cast<FunctionType>(dyn_cast<PointerType>(op->getCalledValue()->getType())->getElementType())->isVarArg()){
+										//errs() << "Here ..... " ;
+										ptype = dyn_cast<FunctionType>(dyn_cast<PointerType>(op->getCalledValue()->getType())->getElementType())->params()[i] ;
+									}
 								}
 
 								//errs()<<i<<".\t"<<ptype<<"\n";
@@ -2014,6 +2019,7 @@ Value* resolveGEPOperator(GEPOperator *GI,DataLayout *D,LLVMContext &Context)
 
 Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Context,std::map <StructType*, StructType*> rep_structs)
 {
+
 	int offset = 0;
 	Value *Offset,*temp;
 	int c = 0;
