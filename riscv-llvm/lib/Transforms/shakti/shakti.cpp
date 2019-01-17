@@ -1009,7 +1009,7 @@ namespace {
 										//errs() << "store pointer type : " << *storeptrtype << "\n" ;
 										op->getOperand(1)->mutateType(storeptrtype);
 									}
-									if(dyn_cast<GEPOperator>(op->getOperand(1))){
+									if(op->getOperand(0)->getType() == Type::getInt8Ty(Ctx) &&  dyn_cast<GEPOperator>(op->getOperand(1))){
 										if(i == B.begin())
 											continue;
 
@@ -2150,16 +2150,24 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 		if(!isconstant)
 		{
 			//errs()<<"\n------\n"<<*GI<<"\n";
+			if(noOfOperands == 2){
+				temp = llvm::ConstantInt::get(Type::getInt64Ty(Context), D->getTypeAllocSize(t));
+			}else{
 			if(baseTy != Type::getInt8PtrTy(Context))
 				temp= llvm::ConstantInt::get(Type::getInt64Ty(Context), D->getTypeAllocSize((baseTy->isPointerTy() && !isFnArr)?Type::getInt128Ty(Context):baseTy));
 			else
 				temp= llvm::ConstantInt::get(Type::getInt64Ty(Context), D->getTypeAllocSize(t->getElementType()));
 			//errs() << "Hello : " <<*t->getElementType()<<"\n"<<D->getTypeAllocSize(t->getElementType())<<"\n"<< D->getTypeAllocSize(baseTy);
+			}
 			IRBuilder<> builder(GI);
 			Offset = builder.CreateBinOp(Instruction::Mul,Offset, temp, "tmp");
 		}
-		else
-			offset+=c*D->getTypeAllocSize( (t->getElementType()->isPointerTy() && !isFnArr) ? Type::getInt128Ty(Context):t->getElementType() ); //D->getTypeAllocSize(t)/t->getArrayNumElements();
+		else{
+			if(noOfOperands == 2)
+				offset+=c*D->getTypeAllocSize(t);
+			else
+				offset+=c*D->getTypeAllocSize( (t->getElementType()->isPointerTy() && !isFnArr) ? Type::getInt128Ty(Context):t->getElementType() ); //D->getTypeAllocSize(t)/t->getArrayNumElements();
+		}
 	}
 	else
 	{	//basic pointer increment or decrements
