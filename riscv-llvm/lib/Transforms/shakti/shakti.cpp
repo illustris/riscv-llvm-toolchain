@@ -14,7 +14,7 @@
 #include <map>
 #include <set>
 //#define debug_spass
-#define debug_spass_dmodule
+//#define debug_spass_dmodule
 
 using namespace llvm;
 
@@ -660,7 +660,7 @@ namespace {
 			// Fifth pass replaces pointers, store and load
 			//check the value of ptr_to_st_cook and ptr_to_st_hash
 			//errs() << "size of global variable map :  " << glob_var.size() << "\n" ;
-			Value *invalidStr =  NULL;
+			Value *invalidStr =  NULL, *chckStr=NULL;
 			for (auto &F : M)
 			{
 				DataLayout *D = new DataLayout(&M);
@@ -1600,6 +1600,50 @@ namespace {
 									Builder.CreateCall(exitF,zero);
 									break;
 									}
+								}
+								if(op->getCalledFunction()->isIntrinsic() && op->getCalledFunction()->getName().contains("memcpy")){
+									Value *dest = op->getOperand(0);
+									Value *src = op->getOperand(1);
+									if(!(dest->getType() == Type::getInt8PtrTy(Ctx))){
+									TruncInst *dest_lo = new TruncInst(dest, Type::getInt32Ty(Ctx),"fpr_low", op);
+									IntToPtrInst *destPtr = new IntToPtrInst(dest_lo,op->getFunctionType()->getParamType(0),"ptrc",op);
+									op->setOperand(0,destPtr);
+									op->getOperand(0)->mutateType(op->getFunctionType()->getParamType(0));
+									}
+
+									if(!(src->getType() == Type::getInt8PtrTy(Ctx))){
+									TruncInst *src_lo = new TruncInst(src, Type::getInt32Ty(Ctx),"fpr_low", op);
+									IntToPtrInst *srcPtr = new IntToPtrInst(src_lo,op->getFunctionType()->getParamType(1),"ptrc",op);
+									op->setOperand(1,srcPtr);
+									op->getOperand(1)->mutateType(op->getFunctionType()->getParamType(1));
+									}
+
+									if(i == B.begin())
+										continue;
+
+									Value *zero64 = llvm::ConstantInt::get(Type::getInt64Ty(Ctx),0);
+									Value *zero = llvm::ConstantInt::get(Type::getInt32Ty(Ctx),0);
+									//creating function call prototype to exit(0)
+									std::vector<Type*> exitParamTypes = {Type::getInt32Ty(Ctx)};
+									Type *exitRetType = Type::getVoidTy(Ctx);
+									FunctionType *exitFuncType = FunctionType::get(exitRetType, exitParamTypes, false);
+									Value *exitF = F.getParent()->getOrInsertFunction("exit", exitFuncType);
+									IRBuilder<> Builder(I);
+									Builder.SetInsertPoint(I);
+									Value *res = Builder.CreateICmpSLT(op->getOperand(2), zero64, "");
+									Instruction *ter = SplitBlockAndInsertIfThen(res, I,true);
+
+									//creating a function call prototype to printf to print "Invalid Size"
+									std::vector<Type*> printParamTypes = {Type::getInt8PtrTy(Ctx)};
+									Type *printRetType = Type::getInt32Ty(Ctx);
+									FunctionType *printFuncType = FunctionType::get(printRetType, printParamTypes, true);
+									Value *printF = F.getParent()->getOrInsertFunction("printf", printFuncType);
+									if(chckStr == NULL)
+										chckStr = Builder.CreateGlobalStringPtr("Size less than 0\n");
+									Builder.SetInsertPoint(ter);
+									Builder.CreateCall(printF,chckStr);
+									Builder.CreateCall(exitF,zero);
+									break;
 								}
 							}
 							//errs()<<*op<<"\n";
