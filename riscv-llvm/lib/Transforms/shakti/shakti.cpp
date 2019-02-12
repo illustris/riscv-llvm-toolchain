@@ -1405,11 +1405,12 @@ namespace {
 									TruncInst *tr_lo,*file_lo;
 									Value *destLen;
 
-									file_lo = new TruncInst(file, Type::getInt32Ty(Ctx),"fpr_low", op);
-									filePtr = new IntToPtrInst(file_lo,op->getFunctionType()->getParamType(2),"ptrc",op);
-									op->setOperand(2,filePtr);
-									op->getOperand(2)->mutateType(op->getFunctionType()->getParamType(2));
-
+									if(file->getType() != op->getFunctionType()->getParamType(2)){
+										file_lo = new TruncInst(file, Type::getInt32Ty(Ctx),"fpr_low", op);
+										filePtr = new IntToPtrInst(file_lo,op->getFunctionType()->getParamType(2),"ptrc",op);
+										op->setOperand(2,filePtr);
+										op->getOperand(2)->mutateType(op->getFunctionType()->getParamType(2));
+									}
 									IRBuilder<> Builder(I);
 									Builder.SetInsertPoint(I);
 
