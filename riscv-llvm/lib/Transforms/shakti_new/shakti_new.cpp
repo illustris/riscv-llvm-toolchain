@@ -433,15 +433,17 @@ namespace {
 				Value *randomF = F.getParent()->getOrInsertFunction("random64", randomFuncType);
 
 				AllocaInst *st_cook;	// pointer to stack cookie
+				AllocaInst *stk_bnd;	//stores the address to the stack cookie.
 				for (auto &B : F)
 				{
 					if(&B == &((&F)->front()))
 					{	// If BB is first
 
 						AI = &((&B)->front());	// Get first instruction in function
+						stk_bnd = new AllocaInst(Type::getInt32Ty(Ctx), 0,"ptr_to_stack_cookie", AI);
 					}
 
-					for (auto &I : B){	// Iterate over instructions to get the last Alloca and Return Inst
+					for (auto &I : B){	// Iterate over instructions to get the first non-Alloca Inst and Return Inst
 						if (!dyn_cast<AllocaInst>(&I) && !stack_cook_ins && !flag)
 						{
 							AI = &I;
@@ -462,6 +464,8 @@ namespace {
 						//errs() << *I << "\n" ;
 						st_cook = new AllocaInst(Type::getInt64Ty(Ctx), 0,"stack_cookie", FPR);	// alloca stack cookie
 						ptr_to_st_cook = new PtrToIntInst(st_cook,Type::getInt32Ty(Ctx), "stack_cookie_32", FPR);
+						//store the address of stack cookie in ptr_to_stk_cookie
+						new StoreInst(ptr_to_st_cook,stk_bnd,FPR);
 						CallInst *getRandom = CallInst::Create (randomF, "", FPR);
 						new StoreInst(getRandom,st_cook,FPR);
 
@@ -989,6 +993,7 @@ namespace {
 										if(i == B.begin())
 											continue;
 
+										//check this staticLoadStore method
 										GEPOperator *operand = dyn_cast<GEPOperator>(op->getOperand(1));
 										staticLoadStore(operand,I,&F,"Pointer access out of range!!!!!",Ctx);
 										break;
