@@ -18,7 +18,7 @@
 
 using namespace llvm;
 
-Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Context,std::map <StructType*, StructType*> rep_structs);
+void resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Context,std::map <StructType*, StructType*> rep_structs);
 Value* resolveGEPOperator(GEPOperator *GI,DataLayout *D,LLVMContext &Context);
 void staticLoadStore(GEPOperator* operand,Instruction *I,Function *F,std::string str,LLVMContext &Ctx);
 bool isLocal(Instruction *ins);
@@ -1237,15 +1237,7 @@ namespace {
 
 							modified=true;
 							//errs()<<"\n-----------\n"<<*op<<"\n-----------\n";
-							Value *offset = resolveGetElementPtr(op,D,Ctx,rep_structs);
-
-							ZExtInst *zext_binop = new ZExtInst(offset, Type::getInt128Ty(Ctx), "zextarrayidx", op);
-							BinaryOperator *binop =  BinaryOperator::Create(Instruction::Add, op->getOperand(0), zext_binop , "arrayidx", op);
-							
-							std::stack <User *> users;
-							std::stack <int> pos;
-
-							op->replaceAllUsesWith(binop);
+							resolveGetElementPtr(op,D,Ctx,rep_structs);
 
 							--i;
 							op->dropAllReferences();
@@ -1938,7 +1930,7 @@ Value* resolveGEPOperator(GEPOperator *GI,DataLayout *D,LLVMContext &Context)
 }
 
 
-Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Context,std::map <StructType*, StructType*> rep_structs)
+void resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Context,std::map <StructType*, StructType*> rep_structs)
 {
 
 	int offset = 0;
@@ -2058,14 +2050,21 @@ Value* resolveGetElementPtr(GetElementPtrInst *GI,DataLayout *D,LLVMContext &Con
 			offset+=c*D->getTypeAllocSize(type);
 	}
 
-	if(isNeg)
-		offset = offset*-1;
-
 	if(isconstant)
 		Offset = llvm::ConstantInt::get(Type::getInt32Ty(Context),offset);
 
 
-	return Offset;
+	Instruction *op = dyn_cast<Instruction>(GI);
+	BinaryOperator *binop;
+	ZExtInst *zext_binop = new ZExtInst(Offset, Type::getInt128Ty(Context), "zextarrayidx", op);
+	if(isNeg){
+		//offset = offset*-1;
+		binop =  BinaryOperator::Create(Instruction::Sub, GI->getOperand(0), zext_binop , "arrayidx", op);
+	}else{
+		binop =  BinaryOperator::Create(Instruction::Add, GI->getOperand(0), zext_binop , "arrayidx", op);
+	}
+	op->replaceAllUsesWith(binop);
+
 }
 
 
