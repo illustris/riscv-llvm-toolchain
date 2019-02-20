@@ -1811,6 +1811,7 @@ bool isLocal(Instruction *ins){
 
 void craftFatPointer(Instruction *ins, unsigned int i, Value *craftFunc,DataLayout *D,LLVMContext &Ctx,PtrToIntInst *ptr_to_st_cook,TruncInst *ptr_to_st_hash,GlobalVariable *rodata_cookie,unsigned long ro_hash){
 
+
 	auto *op = dyn_cast<Instruction>(ins);
 	auto *insertPoint = op;
 
@@ -1839,7 +1840,10 @@ void craftFatPointer(Instruction *ins, unsigned int i, Value *craftFunc,DataLayo
 		GEPOperator *gep = dyn_cast<GEPOperator>(op->getOperand(i));
 		size = resolveGEPOperator(gep,D,Ctx);
 	}else{
-		size =  llvm::ConstantInt::get(Type::getInt32Ty(Ctx),(D->getTypeAllocSize(dyn_cast<PointerType>(op->getOperand(i)->getType())->getElementType() ))); // need to check
+		if( dyn_cast<PointerType>(op->getOperand(i)->getType())->getElementType() != Type::getInt16Ty(Ctx) )
+			size =  llvm::ConstantInt::get(Type::getInt32Ty(Ctx),(D->getTypeAllocSize(dyn_cast<PointerType>(op->getOperand(i)->getType())->getElementType() ))); // need to check
+		else
+			size =  llvm::ConstantInt::get(Type::getInt32Ty(Ctx),(D->getTypeAllocSize(op->getOperand(i)->getType() ))); // need to check
 	}
 	BinaryOperator *bound = BinaryOperator::Create( Instruction::Add, trunc , size , "absolute_bnd", insertPoint); 
 	args.push_back(bound);
@@ -1858,7 +1862,6 @@ void craftFatPointer(Instruction *ins, unsigned int i, Value *craftFunc,DataLayo
 	if(dyn_cast<PHINode>(op)){
 		op->mutateType(Type::getInt128Ty(Ctx));
 	}
-
 }
 void staticLoadStore(GEPOperator* operand,Instruction *I,Function *F,std::string str,LLVMContext &Ctx){
 
